@@ -32,16 +32,59 @@ class NolioApiClient:
             self._oauth = oauth
         self._session = session or requests.Session()
 
-    def get_planned_sessions(self, day: date | str | None = None) -> list[dict[str, Any]]:
+    def get(self, endpoint: str, params: dict[str, Any] | None = None) -> Any:
+        return self._request("GET", f"get/{endpoint}", params=params).json()
+
+    def get_athlete(self) -> dict[str, Any]:
+        payload = self.get("user/")
+        if isinstance(payload, dict):
+            return payload
+        raise NolioApiError("Unexpected athlete response format.")
+
+    def get_metrics(self) -> dict[str, Any]:
+        payload = self.get("user/meta")
+        if not isinstance(payload, dict):
+            raise NolioApiError("Unexpected athlete metadata response format.")
+        return {
+            key: {
+                **metric,
+                "data": max(metric["data"], key=lambda e: e["date"]),
+            }
+            for key, metric in payload.items()
+            if isinstance(metric, dict) and metric.get("data")
+        }
+
+    def get_planned_trainings(
+        self,
+        start: date | str | None = None,
+        end: date | str | None = None,
+        limit: int | None = None,
+    ):
+        if start is not None:
+            start = start if isinstance(start, str) else start.isoformat()
+        if end is not None:
+            end = end if isinstance(end, str) else end.isoformat()
+
+        if limit is None and start is not None and end is not None:
+            days_delta = (date.fromisoformat(end) - date.fromisoformat(start)).days + 1
+            limit = days_delta * 2
+
+
+        params = {
+            k: v for k, v in {"from": start, "to": end, "limit": limit}.items()
+            if v is not None
+        }
+        return self.get("planned/training/", params=params)
+
+    def get_daily_trainings(
+        self, day: date | str | None = None
+    ) -> list[dict[str, Any]]:
         day = day or date.today()
         day_string = day if isinstance(day, str) else day.isoformat()
-        response = self._request(
-            "GET",
-            "get/planned/training/",
+        payload = self.get(
+            "planned/training/",
             params={"from": day_string, "to": day_string},
         )
-
-        payload = response.json()
         if isinstance(payload, list):
             return payload
         if isinstance(payload, dict) and isinstance(payload.get("results"), list):
