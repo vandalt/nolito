@@ -23,6 +23,8 @@ This repository now includes a minimal package in `src/nolito` with:
 3. Refresh token rotation handling.
 4. Retrieval of today's planned sessions for the token owner.
 
+Client setup is now internal: creating `NolioApiClient()` will load env settings, initialize secure token storage, and handle OAuth/refresh automatically.
+
 ### Required environment variables
 
 ```bash

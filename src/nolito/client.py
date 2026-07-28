@@ -18,17 +18,23 @@ class NolioApiClient:
 
     def __init__(
         self,
-        settings: NolitoSettings,
-        oauth: OAuthManager,
+        settings: NolitoSettings | None = None,
+        oauth: OAuthManager | None = None,
         session: requests.Session | None = None,
     ):
-        self._settings = settings
-        self._oauth = oauth
+        self._settings = settings or NolitoSettings.from_env()
+        if oauth is None:
+            from .tokens import KeyringTokenStore
+
+            token_store = KeyringTokenStore.from_settings(self._settings)
+            self._oauth = OAuthManager(settings=self._settings, token_store=token_store)
+        else:
+            self._oauth = oauth
         self._session = session or requests.Session()
 
-    def get_planned_sessions_today(self, day: date | None = None) -> list[dict[str, Any]]:
-        target_day = day or date.today()
-        day_string = target_day.isoformat()
+    def get_planned_sessions(self, day: date | str | None = None) -> list[dict[str, Any]]:
+        day = day or date.today()
+        day_string = day if isinstance(day, str) else day.isoformat()
         response = self._request(
             "GET",
             "get/planned/training/",
