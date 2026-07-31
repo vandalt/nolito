@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 from urllib.parse import urljoin
 
@@ -79,7 +79,8 @@ class NolioApiClient:
     def get_daily_trainings(
         self, day: date | str | None = None
     ) -> list[dict[str, Any]]:
-        day = day or date.today()
+        local_tz = datetime.now().astimezone().tzinfo  # Set timezone explicitely to avoid confusion
+        day = day or datetime.now(local_tz).date()
         day_string = day if isinstance(day, str) else day.isoformat()
         payload = self.get(
             "planned/training/",
