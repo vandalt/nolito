@@ -1,3 +1,4 @@
 __pycache__/
+sandbox/data
 venv/
 /src/nolito/_version.py
