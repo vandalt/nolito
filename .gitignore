@@ -8,6 +8,7 @@ src/nolito/_version.py
 
 # Docs
 docs/_build/
+docs/api
 
 # Project
 sandbox/data
