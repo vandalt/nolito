@@ -1,6 +1,6 @@
 # Nolio API scripts
 
-Python interface for the [Nolio](https://www.nolio.io) API
+Python interface for the [Nolio](https://www.nolio.io) API.
 
 I only recently learned that Nolio had an API and decided to play with it.
 I have a few ideas of things I want to implement once I get the API working:
@@ -39,11 +39,4 @@ Optional:
 ```bash
 export NOLIO_REDIRECT_URI="http://127.0.0.1:8765/callback"  # default already set
 export NOLIO_API_BASE_URL="https://www.nolio.io/api/"
-```
-
-### Run the integration script
-
-```bash
-pip install -e .
-python sandbox/get_planned_sessions.py
 ```

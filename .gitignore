@@ -4,8 +4,10 @@ uv.lock
 
 # Python
 __pycache__/
-sandbox/data
 src/nolito/_version.py
 
 # Docs
 docs/_build/
+
+# Project
+sandbox/data
