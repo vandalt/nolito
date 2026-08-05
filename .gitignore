@@ -1,4 +1,11 @@
+# UV
+uv.lock
+.venv/
+
+# Python
 __pycache__/
 sandbox/data
-venv/
-/src/nolito/_version.py
+src/nolito/_version.py
+
+# Docs
+docs/_build/

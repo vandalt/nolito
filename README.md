@@ -1,6 +1,6 @@
 # Nolio API scripts
 
-Scripts for the [Nolio](www.nolio.io) API.
+Python interface for the [Nolio](https://www.nolio.io) API
 
 I only recently learned that Nolio had an API and decided to play with it.
 I have a few ideas of things I want to implement once I get the API working:
