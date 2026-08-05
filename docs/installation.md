@@ -36,21 +36,21 @@ python -m pip install -U -e . --group test --group docs
 or with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv sync --group test --group docs
+uv sync
 ```
 
 You should then be able to build the docs with:
 
 ```bash
-uv run --group docs make -C docs html
+uv run make -C docs html
 ```
 
 and run the tests with:
 
 ```bash
-uv run --group test pytest
+uv run pytest
 ```
 
-If you installed with pip, simply remove `uv run --group <group-name>` from the commands above.
+If you installed with pip, simply remove `uv run` from the commands above.
 
 To read more on how to set up and use `nolito`, see the [Getting Started guide](getting-started.md)
