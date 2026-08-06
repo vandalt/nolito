@@ -39,18 +39,38 @@ or with [uv](https://docs.astral.sh/uv/):
 uv sync
 ```
 
+The next subsections discuss how to perform various development tasks.
+If you installed with pip, simply remove `uv run` from the commands.
+
+### Building the documentation
+
 You should then be able to build the docs with:
 
 ```bash
 uv run make -C docs html
 ```
 
-and run the tests with:
+### Running the unit tests
+
+Nolito uses [pytest](https://pytest.org/) for testing.
+Unit tests never call the API and only ensure that the information flow through Nolito is working as expected.
 
 ```bash
 uv run pytest
 ```
 
-If you installed with pip, simply remove `uv run` from the commands above.
+### Running the integration tests
+
+Integration tests call the live Nolio API and are skipped by default.
+They require OAuth to be configured as described in [Getting started](getting-started.md#configuring-the-nolio-api).
+These tests are read-only and intentionally do not run in GitHub Actions.
+
+To include integration tests when running `pytest`, explicitly add the `--run-integration` flag:
+
+```bash
+uv run pytest --run-integration
+```
+
+To run _only_ the integration tests, either specify the path to `tests/integration/` or add the `-m integration` flag.
 
 To read more on how to set up and use `nolito`, see the [Getting Started guide](getting-started.md)

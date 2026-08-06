@@ -7,6 +7,27 @@ from nolito.settings import NolitoSettings
 from nolito.tokens import TokenSet
 
 
+def pytest_addoption(parser: pytest.Parser) -> None:
+    parser.addoption(
+        "--run-integration",
+        action="store_true",
+        default=False,
+        help="run tests that call the live Nolio API",
+    )
+
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    if config.getoption("--run-integration"):
+        return
+
+    skip_integration = pytest.mark.skip(
+        reason="use --run-integration to run tests that call the live Nolio API"
+    )
+    for item in items:
+        if "integration" in item.keywords:
+            item.add_marker(skip_integration)
+
+
 @pytest.fixture
 def settings(tmp_path: Path) -> NolitoSettings:
     return NolitoSettings(

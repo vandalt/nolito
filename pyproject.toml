@@ -39,3 +39,8 @@ docs = [
 ]
 lint = ["ruff"]
 test = ["pytest"]
+
+[tool.pytest.ini_options]
+markers = [
+  "integration: tests that call the live Nolio API using a dedicated test account",
+]
