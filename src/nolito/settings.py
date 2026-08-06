@@ -1,5 +1,3 @@
-"""Runtime settings for Nolito."""
-
 from __future__ import annotations
 
 import os
@@ -9,7 +7,11 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class NolitoSettings:
-    """Configuration loaded from environment variables or attributes.
+    """Configuration for the Nolito client
+
+    The information between parenthesis shows the environment variable for this setting
+    and its default value when applicable. This is only used when initializing through :meth:`NolitoSettings.from_env`.
+    Otherwise all attributes are required.
 
     :param client_id: Client ID for the Nolio API (``NOLIO_CLIENT_ID``)
     :param client_secret: Client secret for the Nolio API (``NOLIO_CLIENT_SECRET``)
@@ -61,7 +63,7 @@ def _required_env(name: str) -> str:
     """Get a required environment variable
 
     :param name: Name of the environment variable
-    :raises RuntimeError: Raised if the variable is not set
+    :raises RuntimeError: Raised if the variable is unset or empty
     :return: Value of the environment variable
     """
     value = os.getenv(name)
@@ -71,7 +73,7 @@ def _required_env(name: str) -> str:
 
 
 def _normalized_api_base_url(value: str) -> str:
-    """Normalize the API base URL by ensuring there is a `"/"` at the end
+    """Normalize the API base URL by ensuring it has a trailing slash.
 
     :param value: Initial URL
     :return: Normalized URL

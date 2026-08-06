@@ -1,5 +1,3 @@
-"""Token model and secure persistence."""
-
 from __future__ import annotations
 
 import json
@@ -21,8 +19,8 @@ class TokenSet:
 
     :param access_token: The access token
     :param refresh_token: The refresh token
-    :param expires_at: The expiration time
-    :param token_type: The token type (defaults to ``"Bearer"``
+    :param expires_at: The expiration time as a UNIX timestamp (sec)
+    :param token_type: The token type (defaults to ``"Bearer"``)
     :param scope: The token scope (defaults to ``None``)
     """
 
@@ -36,12 +34,12 @@ class TokenSet:
     def from_oauth_payload(
         cls, payload: dict[str, Any], now: int | None = None
     ) -> TokenSet:
-        """Extract the token set from an OAuth paylot
+        """Extract the token set from an OAuth payload
 
-        :param payload: The oauth payload as returned by a ``POST``
+        :param payload: The OAuth payload as returned by a ``POST``
                         request to the ``token/`` endpoint.
-        :param now: Current time in seconds (defaults ``time.time()`` when ``None``).
-        :raises RuntimeError: Raised if no ``expires_in`` key is found``
+        :param now: Current time in seconds (defaults to ``time.time()`` when ``None``).
+        :raises RuntimeError: Raised if no ``expires_in`` key is found.
         """
         access_token = _required_string(payload, "access_token")
         refresh_token = _required_string(payload, "refresh_token")
@@ -96,7 +94,7 @@ class KeyringTokenStore:
         )
 
     def load(self) -> TokenSet | None:
-        """Load a token set keyring secrets and metadata
+        """Load a token set from keyring secrets and metadata
 
         :return: The token set based on the current store
         """
@@ -140,7 +138,7 @@ class KeyringTokenStore:
             self._write_metadata(metadata_payload)
 
     def clear(self) -> None:
-        """Clear the information stored in the keyring or the datadata file"""
+        """Clear the information stored in the keyring or the metadata file"""
         with self._lock:
             try:
                 keyring.delete_password(self._service, self._username)

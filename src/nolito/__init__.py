@@ -1,5 +1,3 @@
-"""Nolito package."""
-
 from .client import NolioApiClient
 from .oauth import OAuthManager
 from .settings import NolitoSettings

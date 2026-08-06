@@ -50,7 +50,7 @@ class NolioApiClient:
         The list of endpoints is available on `the Nolio API wiki
         <https://github.com/NolioApp/NolioAPI-Documentation/wiki/API-Routes>`_.
 
-        :param endpoint: The name of the endpoint (everything that comes after ``get/``.
+        :param endpoint: The name of the endpoint (everything that comes after ``get/``).
         :param params: Optional parameters for the request.
         :return: The decoded json response.
         """
@@ -94,11 +94,12 @@ class NolioApiClient:
     ) -> list[dict]:
         """Get planned trainings for a given time frame.
 
-        Returned as a list ordered in decreasing order of date.
+        The returned list seems often ordered in decreasing order of date,
+        but this is not officially documented so assume at your own risk.
 
         :param start: Start date (defaults to ``None``)
         :param end: End date (defaults to ``None``)
-        :param limit: Maximum nuber of trainings (API default is 30)
+        :param limit: Maximum number of trainings (API default is 30)
         :return: List of planned trainings
         """
         if start is not None:
@@ -123,12 +124,12 @@ class NolioApiClient:
         """Get trainings for a given day (today by default)
 
         :param day: The day for which trainings are returned.
-                    Defaults do today when ``None``.
+                    Defaults to today when ``None``.
         :return: List of trainings planned on the day
         """
         local_tz = (
             datetime.now().astimezone().tzinfo
-        )  # Set timezone explicitely to avoid confusion
+        )  # Set timezone explicitly to avoid confusion
         day = day or datetime.now(local_tz).date()
         day_string = day if isinstance(day, str) else day.isoformat()
         payload = self.get(

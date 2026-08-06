@@ -1,5 +1,3 @@
-"""OAuth flow and token lifecycle management."""
-
 from __future__ import annotations
 
 import secrets
@@ -21,7 +19,7 @@ class OAuthManager:
 
     :param settings: Settings for this instance of the API.
     :param token_store: The token store used for authentication info.
-    :param session: `requests.Session <https://requests.readthedocs.io/en/latest/api/#requests.Session>`_ object to attach to he client.
+    :param session: `requests.Session <https://requests.readthedocs.io/en/latest/api/#requests.Session>`_ object to attach to the client.
                     Plain session is created from scratch if ``None``.
                     Defaults to ``None``.
     """
@@ -105,9 +103,9 @@ class OAuthManager:
         return self.exchange_code(code)
 
     def authorization_url(self, state: str) -> str:
-        """Create an autorization URL for the API
+        """Create an authorization URL for the API
 
-        :param state: The random secret state from the token package
+        :param state: The secret state to use the authorization
         :return: URL
         """
         params = {
@@ -119,7 +117,7 @@ class OAuthManager:
         return f"{self._endpoint_url('authorize/')}?{urlencode(params)}"
 
     def _endpoint_url(self, path: str) -> str:
-        """Create a URL by combining the endpoint with a base url
+        """Create a URL by combining the endpoint with a base URL
 
         :param path: The endpoint path
         :return: The full URL
