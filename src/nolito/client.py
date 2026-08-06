@@ -1,5 +1,3 @@
-"""Nolio API client focused on planned sessions retrieval."""
-
 from __future__ import annotations
 
 from datetime import date, datetime
@@ -14,7 +12,7 @@ from .settings import NolitoSettings
 
 
 class NolioApiClient:
-    """HTTP client the Nolio API
+    """HTTP client for the Nolio API
 
     :param settings: Settings for this instance of the API.
                         Create with :meth:`NolitoSettings.from_env() <nolito.settings.NolitoSettings.from_env>`
@@ -23,7 +21,7 @@ class NolioApiClient:
     :param oauth: OAuthManager to use for the API.
                     Created automatically from settings and system keyring if ``None``.
                     Defaults to ``None``.
-    :param session: `requests.Session <https://requests.readthedocs.io/en/latest/api/#requests.Session>`_ object to attach to he client.
+    :param session: `requests.Session <https://requests.readthedocs.io/en/latest/api/#requests.Session>`_ object to attach to the client.
                     Plain session is created from scratch if ``None``.
                     Defaults to ``None``.
     """
@@ -68,7 +66,14 @@ class NolioApiClient:
             return payload
         raise NolioApiError("Unexpected athlete response format.")
 
-    def get_metrics(self) -> dict[str, Any]:
+    def get_metrics(self) -> dict:
+        """Get health metrics for the logged-in user
+
+        These include FTP, VO2 Max, sleep, etc.
+        It retains only the latest for each.
+
+        :return: The dictionary with metrics
+        """
         payload = self.get("user/meta")
         if not isinstance(payload, dict):
             raise NolioApiError("Unexpected athlete metadata response format.")
@@ -86,7 +91,16 @@ class NolioApiClient:
         start: date | str | None = None,
         end: date | str | None = None,
         limit: int | None = None,
-    ):
+    ) -> list[dict]:
+        """Get planned trainings for a given time frame.
+
+        Returned as a list ordered in decreasing order of date.
+
+        :param start: Start date (defaults to ``None``)
+        :param end: End date (defaults to ``None``)
+        :param limit: Maximum nuber of trainings (API default is 30)
+        :return: List of planned trainings
+        """
         if start is not None:
             start = start if isinstance(start, str) else start.isoformat()
         if end is not None:
@@ -106,6 +120,12 @@ class NolioApiClient:
     def get_daily_trainings(
         self, day: date | str | None = None
     ) -> list[dict[str, Any]]:
+        """Get trainings for a given day (today by default)
+
+        :param day: The day for which trainings are returned.
+                    Defaults do today when ``None``.
+        :return: List of trainings planned on the day
+        """
         local_tz = (
             datetime.now().astimezone().tzinfo
         )  # Set timezone explicitely to avoid confusion
@@ -129,6 +149,14 @@ class NolioApiClient:
         params: dict[str, Any] | None = None,
         json: dict[str, Any] | None = None,
     ) -> requests.Response:
+        """Send an authenticated request to the Nolio API
+
+        :param method: API method (``GET``, ``POST``, etc.)
+        :param endpoint: API endpoint to query (e.g. ``/get/user``)
+        :param params: Parameters for the request
+        :param json: JSON to add to the request
+        :return: The `requests.Response <https://requests.readthedocs.io/en/latest/api/#requests.Response>`_ object.
+        """
         tokens = self._oauth.load_or_authorize()
         response = self._session.request(
             method=method,
@@ -154,6 +182,11 @@ class NolioApiClient:
 
 
 def _error_message(response: requests.Response) -> str:
+    """Extract error message from a response
+
+    :param response: The `requests.Response <https://requests.readthedocs.io/en/latest/api/#requests.Response>`_ object.
+    :return: The error message string
+    """
     content_type = response.headers.get("content-type", "")
     if "application/json" in content_type:
         try:

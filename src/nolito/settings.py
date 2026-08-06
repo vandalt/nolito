@@ -9,7 +9,17 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class NolitoSettings:
-    """Configuration loaded from environment variables."""
+    """Configuration loaded from environment variables or attributes.
+
+    :param client_id: Client ID for the Nolio API (``NOLIO_CLIENT_ID``)
+    :param client_secret: Client secret for the Nolio API (``NOLIO_CLIENT_SECRET``)
+    :param redirect_uri: Nolio redirect URI (``NOLIO_REDIRECT_URI``, defaults to http://127.0.0.1:8765/callback)
+    :param api_base_url: Base URL for the API (``NOLIO_API_BASE_URL``, defaults to https://www.nolio.io/api/)
+    :param keyring_service: Name of the keyring service (``NOLITO_KEYRING_SERVICE``, defaults to ``"nolito"``)
+    :param keyring_username: Keyring username (``NOLITO_KEYRING_USERNAME``, defaults to ``"oauth_tokens"``)
+    :param metadata_file: Nolito metadata file, defaults to ``$XDG_CONFIG_HOME/nolito/tokens.metadata.json``
+    :param request_timeout_seconds: Timeout for web requests, defaults to 30 sec.
+    """
 
     client_id: str
     client_secret: str
@@ -21,7 +31,11 @@ class NolitoSettings:
     request_timeout_seconds: float = 30.0
 
     @classmethod
-    def from_env(cls) -> "NolitoSettings":
+    def from_env(cls) -> NolitoSettings:
+        """Initialize settings from environment variables.
+
+        See the class docs for details on each environment variable.
+        """
         client_id = _required_env("NOLIO_CLIENT_ID")
         client_secret = _required_env("NOLIO_CLIENT_SECRET")
         redirect_uri = os.getenv("NOLIO_REDIRECT_URI", "http://127.0.0.1:8765/callback")
@@ -44,6 +58,12 @@ class NolitoSettings:
 
 
 def _required_env(name: str) -> str:
+    """Get a required environment variable
+
+    :param name: Name of the environment variable
+    :raises RuntimeError: Raised if the variable is not set
+    :return: Value of the environment variable
+    """
     value = os.getenv(name)
     if value:
         return value
@@ -51,10 +71,22 @@ def _required_env(name: str) -> str:
 
 
 def _normalized_api_base_url(value: str) -> str:
+    """Normalize the API base URL by ensuring there is a `"/"` at the end
+
+    :param value: Initial URL
+    :return: Normalized URL
+    """
     return value.rstrip("/") + "/"
 
 
 def _default_metadata_file() -> Path:
+    """Get the default nolito metadata file
+
+    The path should be in ``$XDG_CONFIG_HOME/nolito/tokens.metadata.json``.
+    If ``XDG_CONFIG_HOME`` is not set, ``~/.config`` is used.
+
+    :return: Path to the metadata file
+    """
     config_home = os.getenv("XDG_CONFIG_HOME")
     if config_home:
         base = Path(config_home)
