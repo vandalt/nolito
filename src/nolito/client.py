@@ -14,7 +14,19 @@ from .settings import NolitoSettings
 
 
 class NolioApiClient:
-    """HTTP client for a small subset of Nolio API endpoints."""
+    """HTTP client the Nolio API
+
+    :param settings: Settings for this instance of the API.
+                        Create with :meth:`NolitoSettings.from_env() <nolito.settings.NolitoSettings.from_env>`
+                        if ``None``.
+                        Defaults to ``None``.
+    :param oauth: OAuthManager to use for the API.
+                    Created automatically from settings and system keyring if ``None``.
+                    Defaults to ``None``.
+    :param session: `requests.Session <https://requests.readthedocs.io/en/latest/api/#requests.Session>`_ object to attach to he client.
+                    Plain session is created from scratch if ``None``.
+                    Defaults to ``None``.
+    """
 
     def __init__(
         self,
@@ -32,10 +44,25 @@ class NolioApiClient:
             self._oauth = oauth
         self._session = session or requests.Session()
 
-    def get(self, endpoint: str, params: dict[str, Any] | None = None) -> Any:
+    def get(
+        self, endpoint: str, params: dict[str, Any] | None = None
+    ) -> list | dict:
+        """Send a ``GET`` request to any Nolio API endpoint
+
+        The list of endpoints is available on `the Nolio API wiki
+        <https://github.com/NolioApp/NolioAPI-Documentation/wiki/API-Routes>`_.
+
+        :param endpoint: The name of the endpoint (everything that comes after ``get/``.
+        :param params: Optional parameters for the request.
+        :return: The decoded json response.
+        """
         return self._request("GET", f"get/{endpoint}", params=params).json()
 
     def get_athlete(self) -> dict[str, Any]:
+        """Get the user information for the logged-in athlete
+
+        :return: The json dictionary with user information.
+        """
         payload = self.get("user/")
         if isinstance(payload, dict):
             return payload
@@ -69,9 +96,9 @@ class NolioApiClient:
             days_delta = (date.fromisoformat(end) - date.fromisoformat(start)).days + 1
             limit = days_delta * 2
 
-
         params = {
-            k: v for k, v in {"from": start, "to": end, "limit": limit}.items()
+            k: v
+            for k, v in {"from": start, "to": end, "limit": limit}.items()
             if v is not None
         }
         return self.get("planned/training/", params=params)
@@ -79,7 +106,9 @@ class NolioApiClient:
     def get_daily_trainings(
         self, day: date | str | None = None
     ) -> list[dict[str, Any]]:
-        local_tz = datetime.now().astimezone().tzinfo  # Set timezone explicitely to avoid confusion
+        local_tz = (
+            datetime.now().astimezone().tzinfo
+        )  # Set timezone explicitely to avoid confusion
         day = day or datetime.now(local_tz).date()
         day_string = day if isinstance(day, str) else day.isoformat()
         payload = self.get(
