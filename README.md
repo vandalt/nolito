@@ -2,9 +2,6 @@
 
 Python interface for the [Nolio](https://www.nolio.io) API.
 
-I only recently learned that Nolio had an API and decided to play with it.
-I have a few ideas of things I want to implement once I get the API working:
-
 - [ ] Have scripts to read training schedule or plan and modify them (this is my main motivation as I have to merge cycling and running plan and am being lazy about doing it by hand):
   - [ ] Read planned trainings for a given time range
   - [ ] Push planned training for a given time range
