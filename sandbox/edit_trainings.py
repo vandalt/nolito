@@ -49,6 +49,10 @@ payload = {
 }
 
 # %%
+from nolito.training import Training
+t = Training(**payload)
+
+# %%
 # TODO: Keep a record of the id_partner?
 out = client.post("create/planned/training/", payload=payload)
 
