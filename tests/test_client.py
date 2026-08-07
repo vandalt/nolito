@@ -6,6 +6,7 @@ import pytest
 from nolito.client import NolioApiClient, _error_message
 from nolito.errors import NolioApiError
 from nolito.tokens import TokenSet
+from nolito.training import Training
 
 
 @pytest.fixture
@@ -78,82 +79,81 @@ def test_post_returns_json_or_none_for_an_empty_response(
     )
 
 
-def test_create_training_builds_documented_payload(client):
-    created = {"nolio_id": 123}
-    with patch.object(client, "post", return_value=created) as post:
-        result = client.create_training(
-            42,
-            2,
-            "Intervals",
-            date(2026, 8, 7),
-            duration=3600,
-            rpe=8,
-            athlete_id=99,
+@pytest.mark.parametrize(
+    ("method", "planned", "payload", "response", "endpoint"),
+    [
+        (
+            "create_training",
+            planned,
+            {
+                "id_partner": 42,
+                "sport_id": 2,
+                "name": "Intervals",
+                "date_start": "2026-08-07",
+                "duration": 3600,
+                "rpe": 8,
+                "athlete_id": 99,
+            },
+            {"nolio_id": 123},
+            f"create/{'planned/' if planned else ''}training/",
         )
-
-    assert result is created
-    post.assert_called_once_with(
-        "create/training/",
-        payload={
-            "id_partner": 42,
-            "sport_id": 2,
-            "name": "Intervals",
-            "date_start": "2026-08-07",
-            "duration": 3600,
-            "rpe": 8,
-            "athlete_id": 99,
-        },
-    )
-
-
-def test_update_training_builds_documented_payload(client):
-    updated = {"nolio_id": 123, "name": "Recovery"}
-    with patch.object(client, "post", return_value=updated) as post:
-        result = client.update_training(
-            42,
-            2,
-            name="Recovery",
-            date_start="2026-08-08",
-            distance=5,
+        for planned in (True, False)
+    ]
+    + [
+        (
+            "update_training",
+            planned,
+            {
+                "id_partner": 42,
+                "sport_id": 2,
+                "name": "Recovery",
+                "date_start": "2026-08-08",
+                "distance": 5,
+            },
+            {"nolio_id": 123, "name": "Recovery"},
+            f"update/{'planned/' if planned else ''}training/",
         )
+        for planned in (True, False)
+    ]
+    + [
+        (
+            "delete_training",
+            planned,
+            {"id_partner": 42, "athlete_id": 99},
+            None,
+            f"delete/{'planned/' if planned else ''}training/",
+        )
+        for planned in (True, False)
+    ],
+)
+def test_training_post_builds_documented_payload(
+    client, method, planned, payload, response, endpoint
+):
+    training = Training(**payload, planned=planned)
 
-    assert result is updated
-    post.assert_called_once_with(
-        "update/training/",
-        payload={
-            "id_partner": 42,
-            "sport_id": 2,
-            "name": "Recovery",
-            "date_start": "2026-08-08",
-            "distance": 5,
-        },
-    )
+    with patch.object(client, "post", return_value=response) as post:
+        result = getattr(client, method)(training)
 
-
-def test_delete_training_builds_documented_payload(client):
-    with patch.object(client, "post", return_value=None) as post:
-        assert client.delete_training(42, athlete_id=99) is None
-
-    post.assert_called_once_with(
-        "delete/training/", payload={"id_partner": 42, "athlete_id": 99}
-    )
+    assert result is response
+    post.assert_called_once_with(endpoint, payload=payload)
 
 
 @pytest.mark.parametrize(
-    ("method", "args", "kwargs"),
+    ("method", "kwargs"),
     [
-        ("create_training", (42, 2, "Intervals", "2026-08-07"), {}),
-        ("update_training", (42, 2), {}),
+        ("create_training", {"id_partner": 42, "sport_id": 2, "name": "Intervals", "date_start": "2026-08-07"}),
+        ("update_training", {"id_partner": 42, "sport_id": 2}),
     ],
 )
 def test_training_create_and_update_reject_empty_responses(
-    client, method, args, kwargs
+    client, method, kwargs
 ):
+    training = Training(**kwargs)
     with (
         patch.object(client, "post", return_value=None),
         pytest.raises(NolioApiError, match="response format"),
     ):
-        getattr(client, method)(*args, **kwargs)
+        getattr(client, method)(training)
 
 
 def test_delete_training_rejects_json_response(client):
@@ -161,10 +161,12 @@ def test_delete_training_rejects_json_response(client):
         patch.object(client, "post", return_value={"nolio_id": 123}),
         pytest.raises(NolioApiError, match="deleted-training"),
     ):
-        client.delete_training(42)
+        client.delete_training(Training(id_partner=42))
 
 
-def test_request_preserves_api_path_for_leading_slash_endpoint(client, settings, tokens, make_response):
+def test_request_preserves_api_path_for_leading_slash_endpoint(
+    client, settings, tokens, make_response
+):
     client._oauth.load_or_authorize.return_value = tokens
     client._session.request.return_value = make_response(payload={})
 
@@ -226,7 +228,9 @@ def test_get_metrics_rejects_non_mapping_response(client, payload):
         (None, None, None, None, {}),
     ],
 )
-def test_get_planned_trainings_builds_params(client, training_id, start, end, limit, expected):
+def test_get_planned_trainings_builds_params(
+    client, training_id, start, end, limit, expected
+):
     with patch.object(client, "get", return_value=[]) as get:
         client.get_planned_trainings(training_id, start, end, limit)
     get.assert_called_once_with("planned/training/", params=expected)

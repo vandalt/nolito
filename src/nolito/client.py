@@ -6,6 +6,8 @@ from urllib.parse import urljoin
 
 import requests
 
+from nolito.training import Training
+
 from .errors import NolioApiError
 from .oauth import OAuthManager
 from .settings import NolitoSettings
@@ -73,116 +75,35 @@ class NolioApiClient:
         response = self._request("POST", endpoint, params=params, json=payload)
         return response.json() if response.content else None
 
-    def create_training(
-        self,
-        id_partner: int,
-        sport_id: int,
-        name: str,
-        date_start: date | str,
-        *,
-        description: str | None = None,
-        duration: int | None = None,
-        feeling: int | None = None,
-        rpe: int | None = None,
-        distance: int | None = None,
-        elevation_gain: int | None = None,
-        athlete_id: int | None = None,
-    ) -> dict[str, Any]:
+    def create_training(self, training: Training) -> dict[str, Any]:
         """Create a completed training.
 
-        ``id_partner`` is the stable, integrator-owned identifier used to
-        update or delete this training later. Persist it in the caller's
-        system: Nolio does not return it in training retrieval responses.
+        Training can be planned or non-planned.
+        The ``Training.planned`` attribute will be used to determine this.
 
-        :param id_partner: Integrator-owned training identifier.
-        :param sport_id: Nolio sport identifier.
-        :param name: Training name.
-        :param date_start: Training date.
-        :param description: Optional training description.
-        :param duration: Optional duration in seconds.
-        :param feeling: Optional feeling score from 1 to 5.
-        :param rpe: Optional perceived-exertion score from 1 to 10.
-        :param distance: Optional distance in meters.
-        :param elevation_gain: Optional elevation gain in meters.
-        :param athlete_id: Optional athlete receiving the training.
+        :param training: Training object with all the workout information.
         :return: The created training.
-        :raises NolioApiError: If Nolio returns an unexpected response format.
         """
-        payload = _without_none(
-            {
-                "id_partner": id_partner,
-                "sport_id": sport_id,
-                "name": name,
-                "date_start": _format_date(date_start),
-                "description": description,
-                "duration": duration,
-                "feeling": feeling,
-                "rpe": rpe,
-                "distance": distance,
-                "elevation_gain": elevation_gain,
-                "athlete_id": athlete_id,
-            }
+        endpoint = (
+            "create/planned/training/" if training.planned else "create/training/"
         )
-        response = self.post("create/training/", payload=payload)
-        return _require_mapping(response, "created training")
+        return _require_mapping(self.post(endpoint, payload=training.to_dict()), "create")
 
-    def update_training(
-        self,
-        id_partner: int,
-        sport_id: int,
-        *,
-        name: str | None = None,
-        date_start: date | str | None = None,
-        description: str | None = None,
-        duration: int | None = None,
-        feeling: int | None = None,
-        rpe: int | None = None,
-        distance: int | None = None,
-        elevation_gain: int | None = None,
-        athlete_id: int | None = None,
-    ) -> dict[str, Any]:
-        """Update a completed training created by this OAuth application.
+    def update_training(self, training: Training) -> dict[str, Any]:
+        """Create a completed training.
 
-        ``id_partner`` is the stable, integrator-owned identifier assigned
-        when creating the training. Nolio requires ``sport_id`` for updates.
+        Training can be planned or non-planned.
+        The ``Training.planned`` attribute will be used to determine this.
 
-        :param id_partner: Integrator-owned training identifier.
-        :param sport_id: Nolio sport identifier.
-        :param name: Optional replacement training name.
-        :param date_start: Optional replacement training date.
-        :param description: Optional replacement training description.
-        :param duration: Optional replacement duration in seconds.
-        :param feeling: Optional replacement feeling score from 1 to 5.
-        :param rpe: Optional replacement perceived-exertion score from 1 to 10.
-        :param distance: Optional replacement distance in meters.
-        :param elevation_gain: Optional replacement elevation gain in meters.
-        :param athlete_id: Optional athlete owning the training.
-        :return: The updated training.
-        :raises NolioApiError: If Nolio returns an unexpected response format.
+        :param training: Training object with all the workout information.
+        :return: The created training.
         """
-        payload = _without_none(
-            {
-                "id_partner": id_partner,
-                "sport_id": sport_id,
-                "name": name,
-                "date_start": _format_date(date_start)
-                if date_start is not None
-                else None,
-                "description": description,
-                "duration": duration,
-                "feeling": feeling,
-                "rpe": rpe,
-                "distance": distance,
-                "elevation_gain": elevation_gain,
-                "athlete_id": athlete_id,
-            }
+        endpoint = (
+            "update/planned/training/" if training.planned else "update/training/"
         )
-        response = self.post("update/training/", payload=payload)
-        return _require_mapping(response, "updated training")
+        return _require_mapping(self.post(endpoint, payload=training.to_dict()), "update")
 
-    def delete_training(
-        self, id_partner: int, *, athlete_id: int | None = None
-    ) -> None:
+    def delete_training(self, training: Training) -> None:
         """Delete a completed training created by this OAuth application.
 
         :param id_partner: Integrator-owned training identifier.
@@ -190,12 +111,12 @@ class NolioApiClient:
         :return: ``None`` after Nolio's empty successful response.
         :raises NolioApiError: If Nolio returns an unexpected response format.
         """
-        response = self.post(
-            "delete/training/",
-            payload=_without_none(
-                {"id_partner": id_partner, "athlete_id": athlete_id}
-            ),
+        delete_keys = ["id_partner", "athlete_id"]
+        payload = {k: v for k, v in training.to_dict().items() if k in delete_keys}
+        endpoint = (
+            "delete/planned/training/" if training.planned else "delete/training/"
         )
+        response = self.post(endpoint, payload=payload)
         if response is not None:
             raise NolioApiError("Unexpected deleted-training response format.")
 
@@ -348,16 +269,6 @@ def _error_message(response: requests.Response) -> str:
     else:
         detail = response.text
     return f"{response.status_code} {detail}"
-
-
-def _format_date(value: date | str) -> str:
-    """Return an API date string."""
-    return value if isinstance(value, str) else value.isoformat()
-
-
-def _without_none(values: dict[str, Any]) -> dict[str, Any]:
-    """Exclude optional API parameters that callers did not provide."""
-    return {key: value for key, value in values.items() if value is not None}
 
 
 def _require_mapping(
