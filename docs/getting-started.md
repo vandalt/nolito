@@ -21,9 +21,9 @@ Once this is done, reload your shell (exit and re-open the terminal).
 
 ## First connection to the API
 
-<!-- TODO: NolioApiClient hyperlink -->
 When connecting to the API for the first time, you will need to authenticate `nolito` with the Nolio API.
-You will be automatically prompted to do this when creating a `NolioApiClient` object:
+You will be automatically prompted to do this when creating a
+{py:class}`~nolito.client.NolioApiClient` object:
 
 ```python
 client = NolioApiClient()
