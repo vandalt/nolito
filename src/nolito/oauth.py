@@ -47,10 +47,14 @@ class OAuthManager:
         return tokens
 
     def refresh(self, refresh_token: str) -> TokenSet:
-        """Refresh the authentication token
+        """Refresh the authentication token, or re-authorize after token revocation.
 
         :param refresh_token: The refresh token for the API
-        :return: The updated token set
+        :return: The updated token set.
+
+        Nolio rotates refresh tokens. A consumed or revoked token produces
+        ``invalid_grant`` and cannot be retried, so its local copy is removed
+        before restarting the authorization flow.
         """
         response = self._session.post(
             self._endpoint_url("token/"),
@@ -58,6 +62,9 @@ class OAuthManager:
             auth=(self._settings.client_id, self._settings.client_secret),
             timeout=self._settings.request_timeout_seconds,
         )
+        if response.status_code == 400 and _oauth_error(response) == "invalid_grant":
+            self._token_store.clear()
+            return self.authorize_with_local_callback()
         payload = _read_json_or_raise(response, context="refresh token")
         tokens = TokenSet.from_oauth_payload(payload)
         self._token_store.save(tokens)
@@ -231,3 +238,13 @@ def _read_json_or_raise(response: requests.Response, *, context: str) -> dict[st
         detail = response.text
 
     raise OAuthFlowError(f"Failed to {context}: {response.status_code} {detail}")
+
+
+def _oauth_error(response: requests.Response) -> str | None:
+    """Return an OAuth error code from a JSON response, if present."""
+    try:
+        payload = response.json()
+    except ValueError:
+        return None
+    error = payload.get("error") if isinstance(payload, dict) else None
+    return error if isinstance(error, str) else None

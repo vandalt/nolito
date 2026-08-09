@@ -84,6 +84,20 @@ def test_token_exchange_posts_and_persists(
     manager._token_store.save.assert_called_once_with(result)
 
 
+def test_refresh_reauthorizes_after_invalid_grant(manager, make_response, tokens):
+    manager._session.post.return_value = make_response(
+        ok=False,
+        status_code=400,
+        payload={"error": "invalid_grant"},
+    )
+    manager.authorize_with_local_callback = Mock(return_value=tokens)
+
+    assert manager.refresh("consumed-refresh-token") is tokens
+    manager._token_store.clear.assert_called_once_with()
+    manager.authorize_with_local_callback.assert_called_once_with()
+    manager._token_store.save.assert_not_called()
+
+
 def test_authorization_url_encodes_params(manager):
     url = manager.authorization_url("state value")
     assert url.startswith("https://api.example.test/api/authorize/?")
