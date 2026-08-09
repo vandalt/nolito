@@ -31,6 +31,9 @@ client = NolioApiClient()
 
 The authentication should store a token in your system's keyring,
 meaning that you will not need to do this again after the first connection.
+Nolio rotates refresh tokens on every refresh. If a refresh token has already
+been consumed or revoked, Nolito removes it and starts the authorization flow
+again.
 
 ## Common operations
 
