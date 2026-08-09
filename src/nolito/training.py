@@ -1,7 +1,9 @@
 import copy
+import json
 from collections.abc import Iterator, Sequence
 from dataclasses import asdict, dataclass, field, fields
-from typing import Any, overload
+from pathlib import Path
+from typing import Any, Self, overload
 
 
 @dataclass
@@ -12,23 +14,20 @@ class Training:
     that only supported fields can be sent to create and update endpoints.
     """
 
+    nolio_id: int | None = None
     id_partner: int | None = None
-    sport_id: int | None = None
     name: str | None = None
     date_start: str | None = None
-    description: str | None = None
-    duration: int | None = None
-    feeling: int | None = None
-    rpe: int | None = None
-    distance: int | float | None = None
-    elevation_gain: int | None = None
-    athlete_id: int | None = None
-    structured_workout: list | None = None
-    planned: bool = field(default=True, metadata={"api": False})
-    nolio_id: int | None = None
     date_end: str | None = None
     hour_start: str | None = None
+    description: str | None = None
     sport: str | None = None
+    sport_id: int | None = None
+    duration: int | None = None
+    distance: int | float | None = None
+    feeling: int | None = None
+    rpe: int | None = None
+    elevation_gain: int | None = None
     elevation_loss: int | None = None
     load_foster: float | None = None
     load_coggan: float | None = None
@@ -36,6 +35,9 @@ class Training:
     kilojoules: int | None = None
     avg_watt: int | None = None
     max_watt: int | None = None
+    athlete_id: int | None = None
+    structured_workout: list | None = None
+    planned: bool = field(default=True, metadata={"api": False})
 
     def __post_init__(self):
         if self.structured_workout is not None:
@@ -80,6 +82,21 @@ class Training:
                 edit_dict[key] = int(edit_dict[key])
         return edit_dict
 
+    def to_json(self, path: Path | str):
+        path = Path(path)
+        path.write_text(
+            json.dumps(self.to_dict(), ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+    @classmethod
+    def from_json(cls, path: Path | str) -> Self:
+        path = Path(path)
+        json_dict = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(json_dict, dict):
+            raise TypeError("JSON training data must be a dictionary")
+        return cls(**json_dict)
+
 
 class TrainingSet(Sequence[Training]):
     trainings: list[Training]
@@ -100,6 +117,9 @@ class TrainingSet(Sequence[Training]):
     def __repr__(self):
         return f"Training set with {len(self.trainings)} trainings"
 
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, TrainingSet) and self.trainings == other.trainings
+
     def __len__(self) -> int:
         return len(self.trainings)
 
@@ -114,6 +134,29 @@ class TrainingSet(Sequence[Training]):
 
     def __iter__(self) -> Iterator[Training]:
         return iter(self.trainings)
+
+    def to_dicts(self) -> list[dict[str, Any]]:
+        training_dicts = []
+        for training in self.trainings:
+            training_dicts.append(training.to_dict())
+        return training_dicts
+
+    def to_json(self, path: Path | str):
+        path = Path(path)
+        path.write_text(
+            json.dumps(self.to_dicts(), ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+    @classmethod
+    def from_json(cls, path: Path | str) -> Self:
+        path = Path(path)
+        training_dicts = json.loads(path.read_text(encoding="utf-8"))
+        if not (isinstance(training_dicts, list) and all(
+            isinstance(training, dict) for training in training_dicts
+        )):
+            raise TypeError("JSON training data must be a list of dictionaries")
+        return cls(training_dicts)
 
 
 def with_step_types(steps):
