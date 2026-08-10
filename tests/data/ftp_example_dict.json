@@ -1,0 +1,116 @@
+{
+  "nolio_id": 34312871,
+  "name": "3x10min avec 30s-30s",
+  "date_start": "2026-07-27",
+  "date_end": "",
+  "hour_start": "",
+  "description": "                   ",
+  "sport": "Vélo - Route",
+  "sport_id": 14,
+  "duration": 5100,
+  "distance": 0,
+  "rpe": 0,
+  "elevation_gain": 0,
+  "elevation_loss": 0,
+  "load_foster": 0,
+  "load_coggan": 110.0,
+  "is_competition": false,
+  "kilojoules": 0,
+  "avg_watt": 0,
+  "max_watt": 0,
+  "structured_workout": [
+    {
+      "step_duration_type": "duration",
+      "step_percent_low": 40,
+      "step_percent_high": 75,
+      "open_duration": true,
+      "step_duration_value": 1200,
+      "target_value_max": 181,
+      "target_value_min": 96,
+      "intensity_type": "warmup",
+      "target_type": "power",
+      "secondary_step": {
+        "target_value_max": 153,
+        "target_value_min": 126,
+        "target_type": "heartrate",
+        "name": "Zone 1"
+      },
+      "name": "FTP"
+    },
+    {
+      "type": "repetition",
+      "value": 3,
+      "steps": [
+        {
+          "type": "repetition",
+          "value": 10,
+          "steps": [
+            {
+              "step_duration_type": "duration",
+              "step_percent_low": 120,
+              "step_percent_high": 130,
+              "step_duration_value": 30,
+              "target_value_max": 313,
+              "target_value_min": 289,
+              "intensity_type": "active",
+              "target_type": "power",
+              "secondary_step": {
+                "target_value_max": 120,
+                "target_value_min": 75,
+                "manual_values": true,
+                "target_type": "rpm",
+                "name": "cadence"
+              },
+              "name": "FTP"
+            },
+            {
+              "step_duration_type": "duration",
+              "step_percent_low": 40,
+              "step_percent_high": 60,
+              "step_duration_value": 30,
+              "target_value_max": 145,
+              "target_value_min": 96,
+              "intensity_type": "cooldown",
+              "target_type": "power",
+              "name": "FTP"
+            }
+          ]
+        },
+        {
+          "step_duration_type": "duration",
+          "step_percent_low": 40,
+          "step_percent_high": 60,
+          "step_duration_value": 300,
+          "target_value_max": 145,
+          "target_value_min": 96,
+          "intensity_type": "cooldown",
+          "target_type": "power",
+          "secondary_step": {
+            "target_value_max": 153,
+            "target_value_min": 126,
+            "target_type": "heartrate",
+            "name": "Zone 1"
+          },
+          "name": "FTP"
+        }
+      ]
+    },
+    {
+      "step_duration_type": "duration",
+      "step_percent_low": 40,
+      "step_percent_high": 60,
+      "step_duration_value": 1200,
+      "target_value_max": 145,
+      "target_value_min": 96,
+      "intensity_type": "cooldown",
+      "target_type": "power",
+      "secondary_step": {
+        "target_value_max": 153,
+        "target_value_min": 126,
+        "target_type": "heartrate",
+        "name": "Zone 1"
+      },
+      "name": "FTP"
+    }
+  ]
+}

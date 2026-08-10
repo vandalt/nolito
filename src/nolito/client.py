@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 
 import requests
 
-from nolito.training import Training
+from nolito.training import Training, TrainingSet
 
 from .errors import NolioApiError
 from .oauth import OAuthManager
@@ -75,7 +75,7 @@ class NolioApiClient:
         response = self._request("POST", endpoint, params=params, json=payload)
         return response.json() if response.content else None
 
-    def create_training(self, training: Training) -> dict[str, Any]:
+    def create_training(self, training: Training) -> Training:
         """Create a completed training.
 
         Training can be planned or non-planned.
@@ -87,9 +87,13 @@ class NolioApiClient:
         endpoint = (
             "create/planned/training/" if training.planned else "create/training/"
         )
-        return _require_mapping(self.post(endpoint, payload=training.to_dict()), "create")
+        return Training(
+            **_require_mapping(
+                self.post(endpoint, payload=training.to_edit_dict()), "create"
+            )
+        )
 
-    def update_training(self, training: Training) -> dict[str, Any]:
+    def update_training(self, training: Training) -> Training:
         """Create a completed training.
 
         Training can be planned or non-planned.
@@ -101,7 +105,11 @@ class NolioApiClient:
         endpoint = (
             "update/planned/training/" if training.planned else "update/training/"
         )
-        return _require_mapping(self.post(endpoint, payload=training.to_dict()), "update")
+        return Training(
+            **_require_mapping(
+                self.post(endpoint, payload=training.to_edit_dict()), "update"
+            )
+        )
 
     def delete_training(self, training: Training) -> None:
         """Delete a completed training created by this OAuth application.
@@ -156,7 +164,7 @@ class NolioApiClient:
         start: date | str | None = None,
         end: date | str | None = None,
         limit: int | None = None,
-    ) -> list[dict]:
+    ) -> TrainingSet:
         """Get planned trainings for a given time frame.
 
         The returned list is ordered in decreasing order of date.
@@ -167,7 +175,7 @@ class NolioApiClient:
         :param start: Start date (defaults to ``None``)
         :param end: End date (defaults to ``None``)
         :param limit: Maximum number of trainings (API default is 30)
-        :return: List of planned trainings
+        :return: Training set
         """
         if start is not None:
             start = start if isinstance(start, str) else start.isoformat()
@@ -188,11 +196,9 @@ class NolioApiClient:
             }.items()
             if v is not None
         }
-        return self.get("planned/training/", params=params)
+        return TrainingSet(self.get("planned/training/", params=params))
 
-    def get_daily_trainings(
-        self, day: date | str | None = None
-    ) -> list[dict[str, Any]]:
+    def get_daily_trainings(self, day: date | str | None = None) -> TrainingSet:
         """Get trainings for a given day (today by default)
 
         :param day: The day for which trainings are returned.
@@ -208,11 +214,11 @@ class NolioApiClient:
             "planned/training/",
             params={"from": day_string, "to": day_string},
         )
-        if isinstance(payload, list):
-            return payload
         if isinstance(payload, dict) and isinstance(payload.get("results"), list):
-            return payload["results"]
-        raise NolioApiError("Unexpected planned-training response format.")
+            payload = payload["results"]
+        elif not isinstance(payload, list):
+            raise NolioApiError("Unexpected planned-training response format.")
+        return TrainingSet(payload)
 
     def _request(
         self,

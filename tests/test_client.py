@@ -134,7 +134,10 @@ def test_training_post_builds_documented_payload(
     with patch.object(client, "post", return_value=response) as post:
         result = getattr(client, method)(training)
 
-    assert result is response
+    if result is None:
+        assert result is response
+    else:
+        assert result.to_dict() == response
     post.assert_called_once_with(endpoint, payload=payload)
 
 
@@ -238,13 +241,13 @@ def test_get_planned_trainings_builds_params(
 
 @pytest.mark.parametrize(
     ("payload", "expected"),
-    [([{"id": 1}], [{"id": 1}]), ({"results": [{"id": 2}]}, [{"id": 2}])],
+    [([{"nolio_id": 1}], [{"nolio_id": 1}]), ({"results": [{"nolio_id": 2}]}, [{"nolio_id": 2}])],
 )
 def test_get_daily_trainings_accepts_supported_response_formats(
     client, payload, expected
 ):
     with patch.object(client, "get", return_value=payload) as get:
-        assert client.get_daily_trainings("2026-01-03") == expected
+        assert client.get_daily_trainings("2026-01-03").to_dicts() == expected
     get.assert_called_once_with(
         "planned/training/", params={"from": "2026-01-03", "to": "2026-01-03"}
     )

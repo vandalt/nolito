@@ -3,6 +3,7 @@ from datetime import datetime
 import pytest
 
 from nolito.client import NolioApiClient
+from nolito.training import TrainingSet
 
 pytestmark = pytest.mark.integration
 
@@ -23,10 +24,10 @@ def test_get_metrics_returns_mapping(client: NolioApiClient) -> None:
     assert isinstance(client.get_metrics(), dict)
 
 
-def test_get_planned_trainings_returns_list(client: NolioApiClient) -> None:
+def test_get_planned_trainings_returns_set(client: NolioApiClient) -> None:
     today = _today()
 
-    assert isinstance(client.get_planned_trainings(today, today), list)
+    assert isinstance(client.get_planned_trainings(start=today, end=today), TrainingSet)
 
 
 def test_get_planned_trainings_max_30(client: NolioApiClient) -> None:
@@ -39,8 +40,8 @@ def test_get_planned_trainings_max_expl(client: NolioApiClient) -> None:
     assert len(client.get_planned_trainings(limit=limit)) == limit
 
 
-def test_get_daily_trainings_returns_list(client: NolioApiClient) -> None:
-    assert isinstance(client.get_daily_trainings(_today()), list)
+def test_get_daily_trainings_returns_set(client: NolioApiClient) -> None:
+    assert isinstance(client.get_daily_trainings(_today()), TrainingSet)
 
 
 def test_get_daily_trainings_defaults_today(client: NolioApiClient) -> None:
