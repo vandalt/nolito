@@ -88,7 +88,7 @@ class NolioApiClient:
             "create/planned/training/" if training.planned else "create/training/"
         )
         return Training(
-            _require_mapping(
+            **_require_mapping(
                 self.post(endpoint, payload=training.to_edit_dict()), "create"
             )
         )
@@ -106,7 +106,7 @@ class NolioApiClient:
             "update/planned/training/" if training.planned else "update/training/"
         )
         return Training(
-            _require_mapping(
+            **_require_mapping(
                 self.post(endpoint, payload=training.to_edit_dict()), "update"
             )
         )
@@ -216,8 +216,9 @@ class NolioApiClient:
         )
         if isinstance(payload, dict) and isinstance(payload.get("results"), list):
             payload = payload["results"]
+        elif not isinstance(payload, list):
+            raise NolioApiError("Unexpected planned-training response format.")
         return TrainingSet(payload)
-        raise NolioApiError("Unexpected planned-training response format.")
 
     def _request(
         self,
