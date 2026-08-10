@@ -13,7 +13,6 @@ from .oauth import OAuthManager
 from .settings import NolitoSettings
 
 
-# TODO: Keep a record of the id_partner somewhere?
 class NolioApiClient:
     """HTTP client for the Nolio API
 
@@ -88,7 +87,11 @@ class NolioApiClient:
         endpoint = (
             "create/planned/training/" if training.planned else "create/training/"
         )
-        return Training(_require_mapping(self.post(endpoint, payload=training.to_edit_dict()), "create"))
+        return Training(
+            _require_mapping(
+                self.post(endpoint, payload=training.to_edit_dict()), "create"
+            )
+        )
 
     def update_training(self, training: Training) -> Training:
         """Create a completed training.
@@ -102,7 +105,11 @@ class NolioApiClient:
         endpoint = (
             "update/planned/training/" if training.planned else "update/training/"
         )
-        return Training(_require_mapping(self.post(endpoint, payload=training.to_edit_dict()), "update"))
+        return Training(
+            _require_mapping(
+                self.post(endpoint, payload=training.to_edit_dict()), "update"
+            )
+        )
 
     def delete_training(self, training: Training) -> None:
         """Delete a completed training created by this OAuth application.
@@ -191,9 +198,7 @@ class NolioApiClient:
         }
         return TrainingSet(self.get("planned/training/", params=params))
 
-    def get_daily_trainings(
-        self, day: date | str | None = None
-    ) -> TrainingSet:
+    def get_daily_trainings(self, day: date | str | None = None) -> TrainingSet:
         """Get trainings for a given day (today by default)
 
         :param day: The day for which trainings are returned.
