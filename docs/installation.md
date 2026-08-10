@@ -62,7 +62,7 @@ uv run pytest
 ### Running the integration tests
 
 Integration tests call the live Nolio API and are skipped by default.
-They require OAuth to be configured as described in [Getting started](getting-started.md#configuring-the-nolio-api).
+They require OAuth to be configured as described in {ref}`Configuring the Nolio API <configuring-nolio-api>`.
 These tests are read-only and intentionally do not run in GitHub Actions.
 
 To include integration tests when running `pytest`, explicitly add the `--run-integration` flag:

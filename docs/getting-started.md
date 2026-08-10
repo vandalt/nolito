@@ -2,6 +2,7 @@
 
 If not already done, the very first step to use `nolito` is to follow the [installation guide](installation.md).
 
+(configuring-nolio-api)=
 ## Configuring the Nolio API
 
 Once `nolito` is installed, you will need to set up the application to use the Nolio API.
