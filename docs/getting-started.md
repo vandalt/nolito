@@ -18,6 +18,14 @@ export NOLIO_CLIENT_ID="your_client_id"
 export NOLIO_CLIENT_SECRET="your_client_secret"
 ```
 
+Optionally, you can also set `NOLIO_REDIRECT_URI` and `NOLIO_API_BASE_URL`.
+They are shown below with the default values used by `nolito`:
+
+```bash
+export NOLIO_REDIRECT_URI="http://127.0.0.1:8765/callback"
+export NOLIO_API_BASE_URL="https://www.nolio.io/api/"
+```
+
 Once this is done, reload your shell (exit and re-open the terminal).
 
 ## First connection to the API
