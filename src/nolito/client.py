@@ -204,6 +204,11 @@ class NolioApiClient:
         self._partner_ids = _PartnerIdRegistry(
             self._settings.metadata_file.parent / "partner-ids.sqlite3"
         )
+        user = self.get_athlete()
+        self._user = f"{user['first_name']} {user['last_name']}"
+
+    def __repr__(self):
+        return f"NolioApiClient authenticated for {self._user}"
 
     def get(self, endpoint: str, params: dict[str, Any] | None = None) -> list | dict:
         """Send a ``GET`` request to any Nolio API endpoint
