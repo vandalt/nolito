@@ -107,6 +107,23 @@ it when present, but `id_partner` is the identifier used for updates and
 deletes. Explicit `id_partner` values are also supported and are stored in the
 same registry.
 
+### Manage registered trainings
+
+The local registry can also store a complete training snapshot that was created
+or imported elsewhere. Registered trainings are local data; these methods do
+not fetch current data from Nolio.
+
+```python
+training = Training(id_partner=42, sport_id=2, name="Intervals")
+client.register_training(training)
+
+stored = client.get_registered_training(42)
+all_stored = client.list_registered_trainings()
+```
+
+`register_training()` rejects duplicate partner IDs. `get_registered_training()`
+raises `KeyError` when the ID is not in the local registry.
+
 ### Get data from any API endpoint
 
 The `NolioApiClient` offers a `get()` method to access any API endpoint and return its data as a dictionary or a list.

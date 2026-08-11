@@ -177,6 +177,7 @@ def test_create_training_allocates_and_registers_partner_id(client, settings, pl
     assert created.name == "Intervals"
     assert created.sport_id == 2
     assert created.planned is planned
+    assert client.get_registered_training(1) == created
     post.assert_called_once_with(
         f"create/{'planned/' if planned else ''}training/",
         payload={
@@ -194,6 +195,84 @@ def test_create_training_allocates_and_registers_partner_id(client, settings, pl
             FROM partner_ids
             """
         ).fetchone() == (1, None, 99, int(planned), "registered")
+
+
+def test_register_training_round_trips_complete_payload_without_http(client):
+    training = Training(
+        id_partner=42,
+        nolio_id=123,
+        name="Intervals",
+        date_start="2026-08-07",
+        sport_id=2,
+        athlete_id=99,
+        structured_workout=[{"step_duration_type": "duration"}],
+    )
+
+    client.register_training(training)
+
+    assert client.get_registered_training(42) == training
+    assert client._session.request.call_count == 0
+
+
+def test_list_registered_trainings_orders_by_partner_id(client):
+    later = Training(id_partner=42, name="Later")
+    earlier = Training(id_partner=3, name="Earlier", planned=False)
+
+    client.register_training(later)
+    client.register_training(earlier)
+
+    assert list(client.list_registered_trainings()) == [earlier, later]
+
+
+def test_register_training_rejects_missing_or_duplicate_partner_id(client):
+    training = Training(id_partner=42, name="Intervals")
+
+    with pytest.raises(ValueError, match="id_partner"):
+        client.register_training(Training(name="Missing ID"))
+
+    client.register_training(training)
+    with pytest.raises(NolioApiError, match="already registered"):
+        client.register_training(training)
+
+
+def test_get_registered_training_rejects_missing_partner_id(client):
+    with pytest.raises(KeyError, match="42"):
+        client.get_registered_training(42)
+
+
+def test_registered_training_migrates_identifier_only_database(client, settings):
+    database = settings.metadata_file.parent / "partner-ids.sqlite3"
+    database.parent.mkdir(exist_ok=True)
+    with sqlite3.connect(database) as db:
+        db.execute(
+            """
+            CREATE TABLE partner_ids (
+                id_partner INTEGER PRIMARY KEY AUTOINCREMENT,
+                nolio_id INTEGER UNIQUE,
+                athlete_id INTEGER,
+                planned INTEGER NOT NULL,
+                status TEXT NOT NULL CHECK(status IN ('reserved', 'registered'))
+            )
+            """
+        )
+        db.execute(
+            """
+            INSERT INTO partner_ids (
+                id_partner, nolio_id, athlete_id, planned, status
+            )
+            VALUES (42, 123, 99, 1, 'registered')
+            """
+        )
+
+    assert client.get_registered_training(42) == Training(
+        id_partner=42,
+        nolio_id=123,
+        athlete_id=99,
+    )
+    with sqlite3.connect(database) as db:
+        assert "training_json" in {
+            row[1] for row in db.execute("PRAGMA table_info(partner_ids)")
+        }
 
 
 def test_create_training_registers_explicit_partner_id(client, settings):
