@@ -10,3 +10,8 @@ installation
 getting-started
 api/index
 ```
+
+## Useful references
+
+- [Nolio API docs on GitHub](https://github.com/NolioApp/NolioAPI-Documentation/)
+- [Nolio masterclass on using the API with AI](https://www.youtube.com/watch?v=l3FcOUnYdhs)
