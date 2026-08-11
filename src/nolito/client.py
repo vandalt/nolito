@@ -368,7 +368,9 @@ class NolioApiClient:
         :param training_id: Return only the training corresponding to this ID.
         :param start: Start date (defaults to ``None``)
         :param end: End date (defaults to ``None``)
-        :param limit: Maximum number of trainings (API default is 30)
+        :param limit: Maximum number of trainings returned.
+                      If ``start`` and ``end`` are specified, defaults to twice the number of days.
+                      Otherwise, uses the API default of 30.
         :return: Training set
         """
         if start is not None:
