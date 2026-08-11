@@ -1,11 +1,10 @@
 """Generate API documentation pages and their flat index."""
 
+import subprocess
+import sys
 from dataclasses import fields, is_dataclass
 from importlib import import_module
 from pathlib import Path
-import subprocess
-import sys
-
 
 DOCS_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = DOCS_DIR.parent
@@ -44,7 +43,7 @@ def main() -> None:
             add_excluded_members(API_DIR / f"{module}.rst", excluded_members)
 
     INDEX_PATH.write_text(
-        "API reference\n"
+        "API Reference\n"
         "=============\n"
         "\n"
         ".. toctree::\n"
