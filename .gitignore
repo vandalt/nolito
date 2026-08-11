@@ -4,6 +4,7 @@
 # Python
 __pycache__/
 src/nolito/_version.py
+dist/
 
 # Docs
 docs/_build/
