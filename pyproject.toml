@@ -27,6 +27,7 @@ packages = ["src/nolito"]
 [dependency-groups]
 dev = [
   "ipython",
+  "ipdb",
   {include-group = "docs"},
   {include-group = "lint"},
   {include-group = "test"},

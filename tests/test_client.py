@@ -1,3 +1,4 @@
+import sqlite3
 from datetime import date
 from unittest.mock import Mock, patch
 
@@ -134,11 +135,135 @@ def test_training_post_builds_documented_payload(
     with patch.object(client, "post", return_value=response) as post:
         result = getattr(client, method)(training)
 
-    if result is None:
+    if method == "create_training":
+        assert result.id_partner == payload["id_partner"]
+        assert result.nolio_id == response["nolio_id"]
+        assert result.planned is planned
+    elif result is None:
         assert result is response
     else:
-        assert result.to_dict() == response
+        assert result.id_partner == payload["id_partner"]
+        assert result.name == response["name"]
+        assert result.planned is planned
     post.assert_called_once_with(endpoint, payload=payload)
+
+
+@pytest.mark.parametrize("planned", [True, False])
+def test_create_training_allocates_and_registers_partner_id(client, settings, planned):
+    training = Training(
+        sport_id=2,
+        name="Intervals",
+        date_start="2026-08-07",
+        athlete_id=99,
+        planned=planned,
+    )
+
+    response = {
+        "id_partner": 1,
+        "name": "Intervals",
+        "date_start": "2026-08-07T00:00:00",
+        "rpe": 0,
+        "duration": None,
+        "distance": None,
+        "elevation_gain": None,
+        "plan_id": None,
+    }
+    with patch.object(client, "post", return_value=response) as post:
+        created = client.create_training(training)
+
+    assert training.id_partner == 1
+    assert created.id_partner == 1
+    assert created.nolio_id is None
+    assert created.name == "Intervals"
+    assert created.sport_id == 2
+    assert created.planned is planned
+    post.assert_called_once_with(
+        f"create/{'planned/' if planned else ''}training/",
+        payload={
+            "id_partner": 1,
+            "sport_id": 2,
+            "name": "Intervals",
+            "date_start": "2026-08-07",
+            "athlete_id": 99,
+        },
+    )
+    with sqlite3.connect(settings.metadata_file.parent / "partner-ids.sqlite3") as db:
+        assert db.execute(
+            """
+            SELECT id_partner, nolio_id, athlete_id, planned, status
+            FROM partner_ids
+            """
+        ).fetchone() == (1, None, 99, int(planned), "registered")
+
+
+def test_create_training_registers_explicit_partner_id(client, settings):
+    training = Training(
+        id_partner=42,
+        sport_id=2,
+        name="Intervals",
+        date_start="2026-08-07",
+    )
+
+    with patch.object(client, "post", return_value={"nolio_id": 123}):
+        created = client.create_training(training)
+
+    assert created.id_partner == 42
+    with sqlite3.connect(settings.metadata_file.parent / "partner-ids.sqlite3") as db:
+        assert db.execute(
+            "SELECT id_partner, nolio_id, status FROM partner_ids"
+        ).fetchone() == (42, 123, "registered")
+
+
+def test_create_training_rejects_registered_partner_id(client):
+    original = Training(
+        id_partner=42,
+        sport_id=2,
+        name="Intervals",
+        date_start="2026-08-07",
+    )
+    duplicate = original.copy()
+
+    with patch.object(client, "post", return_value={"nolio_id": 123}):
+        client.create_training(original)
+    with (
+        patch.object(client, "post") as post,
+        pytest.raises(NolioApiError, match="already registered"),
+    ):
+        client.create_training(duplicate)
+
+    post.assert_not_called()
+
+
+def test_create_training_ids_are_monotonic_across_clients(settings):
+    trainings = [
+        Training(sport_id=2, name="One", date_start="2026-08-07"),
+        Training(sport_id=2, name="Two", date_start="2026-08-08"),
+    ]
+    first = NolioApiClient(settings=settings, oauth=Mock(), session=Mock())
+    second = NolioApiClient(settings=settings, oauth=Mock(), session=Mock())
+
+    with patch.object(first, "post", return_value={"nolio_id": 123}):
+        first.create_training(trainings[0])
+    with patch.object(second, "post", return_value={"nolio_id": 124}):
+        second.create_training(trainings[1])
+
+    assert [training.id_partner for training in trainings] == [1, 2]
+
+
+@pytest.mark.parametrize("response", [None, []])
+def test_create_training_does_not_register_malformed_response(client, settings, response):
+    training = Training(sport_id=2, name="Intervals", date_start="2026-08-07")
+
+    with (
+        patch.object(client, "post", return_value=response),
+        pytest.raises(NolioApiError, match="response|nolio_id"),
+    ):
+        client.create_training(training)
+
+    with sqlite3.connect(settings.metadata_file.parent / "partner-ids.sqlite3") as db:
+        assert db.execute(
+            "SELECT nolio_id, status FROM partner_ids WHERE id_partner = 1"
+        ).fetchone() == (None, "reserved")
 
 
 @pytest.mark.parametrize(

@@ -2,6 +2,7 @@ import copy
 import json
 from collections.abc import Iterator, Sequence
 from dataclasses import asdict, dataclass, field, fields
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Self, overload
 
@@ -69,7 +70,12 @@ class Training:
         """Post-init ensuring the structured workout has step types everywhere"""
         if self.structured_workout is not None:
             self.structured_workout = with_step_types(self.structured_workout)
-
+        def _extract_date(datetime_str: str):
+            return datetime.fromisoformat(self.date_start).date().isoformat()
+        if self.date_start:
+            self.date_start = _extract_date(self.date_start)
+        if self.date_end:
+            self.date_end = _extract_date(self.date_end)
     def copy(self) -> "Training":
         """Return a deepcopy of the training"""
         return copy.deepcopy(self)
