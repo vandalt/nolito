@@ -2,6 +2,7 @@ import copy
 import json
 from collections.abc import Iterator, Sequence
 from dataclasses import asdict, dataclass, field, fields
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Self, overload
 
@@ -44,31 +45,39 @@ class Training:
     id_partner: int | None = None
     name: str | None = None
     date_start: str | None = None
-    date_end: str | None = None
-    hour_start: str | None = None
-    description: str | None = None
+    date_end: str | None = field(default=None, repr=False)
+    hour_start: str | None = field(default=None, repr=False)
+    description: str | None = field(default=None, repr=False)
     sport: str | None = None
-    sport_id: int | None = None
-    duration: int | None = None
-    distance: int | float | None = None
-    feeling: int | None = None
-    rpe: int | None = None
-    elevation_gain: int | None = None
-    elevation_loss: int | None = None
-    load_foster: float | None = None
-    load_coggan: float | None = None
-    is_competition: bool | None = None
-    kilojoules: int | None = None
-    avg_watt: int | None = None
-    max_watt: int | None = None
-    athlete_id: int | None = None
-    structured_workout: list | None = None
+    sport_id: int | None = field(default=None, repr=False)
+    duration: int | None = field(default=None, repr=False)
+    distance: int | float | None = field(default=None, repr=False)
+    feeling: int | None = field(default=None, repr=False)
+    rpe: int | None = field(default=None, repr=False)
+    elevation_gain: int | None = field(default=None, repr=False)
+    elevation_loss: int | None = field(default=None, repr=False)
+    load_foster: float | None = field(default=None, repr=False)
+    load_coggan: float | None = field(default=None, repr=False)
+    is_competition: bool | None = field(default=None, repr=False)
+    kilojoules: int | None = field(default=None, repr=False)
+    avg_watt: int | None = field(default=None, repr=False)
+    max_watt: int | None = field(default=None, repr=False)
+    athlete_id: int | None = field(default=None, repr=False)
+    structured_workout: list | None = field(default=None, repr=False)
     planned: bool = field(default=True, metadata={"api": False})
 
     def __post_init__(self):
         """Post-init ensuring the structured workout has step types everywhere"""
         if self.structured_workout is not None:
             self.structured_workout = with_step_types(self.structured_workout)
+
+        def _extract_date(datetime_str: str):
+            return datetime.fromisoformat(self.date_start).date().isoformat()
+
+        if self.date_start:
+            self.date_start = _extract_date(self.date_start)
+        if self.date_end:
+            self.date_end = _extract_date(self.date_end)
 
     def copy(self) -> "Training":
         """Return a deepcopy of the training"""
@@ -185,7 +194,8 @@ class TrainingSet(Sequence[Training]):
         self.trainings = new_trainings
 
     def __repr__(self):
-        return f"Training set with {len(self)} trainings"
+        trainings_str = "\n".join([repr(training) for training in self.trainings])
+        return f"Training set with {len(self)} trainings:\n{trainings_str}"
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, TrainingSet) and self.trainings == other.trainings

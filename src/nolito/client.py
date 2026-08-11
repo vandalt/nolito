@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import json
+import sqlite3
+from dataclasses import fields
 from datetime import date, datetime
+from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
 
@@ -11,6 +15,160 @@ from nolito.training import Training, TrainingSet
 from .errors import NolioApiError
 from .oauth import OAuthManager
 from .settings import NolitoSettings
+
+
+class _PartnerIdRegistry:
+    """Persist partner IDs assigned to trainings created by this client."""
+
+    def __init__(self, path: Path):
+        self._path = path
+
+    def reserve(
+        self,
+        id_partner: int | None,
+        *,
+        athlete_id: int | None,
+        planned: bool,
+    ) -> int:
+        """Reserve an existing or automatically allocated partner ID."""
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        with sqlite3.connect(self._path) as connection:
+            self._create_table(connection)
+            if id_partner is None:
+                cursor = connection.execute(
+                    """
+                    INSERT INTO partner_ids (athlete_id, planned, status)
+                    VALUES (?, ?, 'reserved')
+                    """,
+                    (athlete_id, planned),
+                )
+                return int(cursor.lastrowid)
+
+            row = connection.execute(
+                """
+                SELECT athlete_id, planned, status
+                FROM partner_ids
+                WHERE id_partner = ?
+                """,
+                (id_partner,),
+            ).fetchone()
+            if row is None:
+                connection.execute(
+                    """
+                    INSERT INTO partner_ids (id_partner, athlete_id, planned, status)
+                    VALUES (?, ?, ?, 'reserved')
+                    """,
+                    (id_partner, athlete_id, planned),
+                )
+            elif row != (athlete_id, int(planned), "reserved"):
+                raise NolioApiError(
+                    f"Partner ID {id_partner} is already registered locally."
+                )
+            return id_partner
+
+    def complete_reservation(self, training: Training) -> None:
+        """Record a successful creation for a reserved partner ID."""
+        with sqlite3.connect(self._path) as connection:
+            self._create_table(connection)
+            cursor = connection.execute(
+                """
+                UPDATE partner_ids
+                SET nolio_id = ?, training_json = ?, status = 'registered'
+                WHERE id_partner = ?
+                  AND athlete_id IS ?
+                  AND planned = ?
+                  AND status = 'reserved'
+                """,
+                (
+                    training.nolio_id,
+                    _training_json(training),
+                    training.id_partner,
+                    training.athlete_id,
+                    training.planned,
+                ),
+            )
+            if cursor.rowcount != 1:
+                raise NolioApiError(
+                    f"Partner ID {training.id_partner} is not an active local reservation."
+                )
+
+    def register(self, training: Training) -> None:
+        """Register a training that has not already been recorded locally."""
+        id_partner = _required_partner_id(training)
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        with sqlite3.connect(self._path) as connection:
+            self._create_table(connection)
+            if connection.execute(
+                "SELECT 1 FROM partner_ids WHERE id_partner = ?", (id_partner,)
+            ).fetchone():
+                raise NolioApiError(
+                    f"Partner ID {id_partner} is already registered locally."
+                )
+            connection.execute(
+                """
+                INSERT INTO partner_ids (
+                    id_partner, nolio_id, athlete_id, planned, status, training_json
+                )
+                VALUES (?, ?, ?, ?, 'registered', ?)
+                """,
+                (
+                    id_partner,
+                    training.nolio_id,
+                    training.athlete_id,
+                    training.planned,
+                    _training_json(training),
+                ),
+            )
+
+    def get(self, id_partner: int) -> Training:
+        """Return a registered training by its partner ID."""
+        with sqlite3.connect(self._path) as connection:
+            self._create_table(connection)
+            row = connection.execute(
+                """
+                SELECT id_partner, nolio_id, athlete_id, planned, training_json
+                FROM partner_ids
+                WHERE id_partner = ? AND status = 'registered'
+                """,
+                (id_partner,),
+            ).fetchone()
+        if row is None:
+            raise KeyError(id_partner)
+        return _training_from_registry_row(row)
+
+    def list(self) -> list[Training]:
+        """Return all registered trainings in partner-ID order."""
+        with sqlite3.connect(self._path) as connection:
+            self._create_table(connection)
+            rows = connection.execute(
+                """
+                SELECT id_partner, nolio_id, athlete_id, planned, training_json
+                FROM partner_ids
+                WHERE status = 'registered'
+                ORDER BY id_partner
+                """
+            ).fetchall()
+        return [_training_from_registry_row(row) for row in rows]
+
+    @staticmethod
+    def _create_table(connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS partner_ids (
+                id_partner INTEGER PRIMARY KEY AUTOINCREMENT,
+                nolio_id INTEGER UNIQUE,
+                athlete_id INTEGER,
+                planned INTEGER NOT NULL,
+                status TEXT NOT NULL CHECK(status IN ('reserved', 'registered')),
+                training_json TEXT
+            )
+            """
+        )
+        columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(partner_ids)")
+        }
+        if "training_json" not in columns:
+            connection.execute("ALTER TABLE partner_ids ADD COLUMN training_json TEXT")
 
 
 class NolioApiClient:
@@ -43,6 +201,9 @@ class NolioApiClient:
         else:
             self._oauth = oauth
         self._session = session or requests.Session()
+        self._partner_ids = _PartnerIdRegistry(
+            self._settings.metadata_file.parent / "partner-ids.sqlite3"
+        )
 
     def get(self, endpoint: str, params: dict[str, Any] | None = None) -> list | dict:
         """Send a ``GET`` request to any Nolio API endpoint
@@ -76,22 +237,49 @@ class NolioApiClient:
         return response.json() if response.content else None
 
     def create_training(self, training: Training) -> Training:
-        """Create a completed training.
+        """Create a training and register its Nolio and partner identifiers.
 
-        Training can be planned or non-planned.
-        The ``Training.planned`` attribute will be used to determine this.
+        A missing ``Training.id_partner`` is allocated locally and stored in
+        SQLite beside Nolito's token metadata. Explicit partner IDs are also
+        registered, allowing later updates and deletes to use the same ID.
 
         :param training: Training object with all the workout information.
         :return: The created training.
         """
+        training.id_partner = self._partner_ids.reserve(
+            training.id_partner,
+            athlete_id=training.athlete_id,
+            planned=training.planned,
+        )
         endpoint = (
             "create/planned/training/" if training.planned else "create/training/"
         )
-        return Training(
-            **_require_mapping(
-                self.post(endpoint, payload=training.to_edit_dict()), "create"
-            )
+        response = _require_mapping(
+            self.post(endpoint, payload=training.to_edit_dict()), "create"
         )
+        created = _training_from_response(training, response)
+        self._partner_ids.complete_reservation(created)
+        return created
+
+    def register_training(self, training: Training) -> None:
+        """Register a complete local training snapshot.
+
+        :param training: Training to register. It must have an ``id_partner``.
+        :raises ValueError: If ``training.id_partner`` is missing or invalid.
+        :raises NolioApiError: If the partner ID is already registered.
+        """
+        self._partner_ids.register(training)
+
+    def get_registered_training(self, id_partner: int) -> Training:
+        """Return a registered training by its partner ID.
+
+        :raises KeyError: If the partner ID is not registered.
+        """
+        return self._partner_ids.get(id_partner)
+
+    def list_registered_trainings(self) -> TrainingSet:
+        """Return all registered trainings in ascending partner-ID order."""
+        return TrainingSet(self._partner_ids.list())
 
     def update_training(self, training: Training) -> Training:
         """Create a completed training.
@@ -105,10 +293,11 @@ class NolioApiClient:
         endpoint = (
             "update/planned/training/" if training.planned else "update/training/"
         )
-        return Training(
-            **_require_mapping(
+        return _training_from_response(
+            training,
+            _require_mapping(
                 self.post(endpoint, payload=training.to_edit_dict()), "update"
-            )
+            ),
         )
 
     def delete_training(self, training: Training) -> None:
@@ -284,3 +473,58 @@ def _require_mapping(
     if isinstance(response, dict):
         return response
     raise NolioApiError(f"Unexpected {response_name} response format.")
+
+
+def _training_from_response(training: Training, response: dict[str, Any]) -> Training:
+    """Merge Nolio's known response fields onto a submitted training."""
+    values = {field.name: getattr(training, field.name) for field in fields(Training)}
+    values.update(
+        {key: value for key, value in response.items() if key in values}
+    )
+    values["id_partner"] = training.id_partner
+    values["planned"] = training.planned
+    return Training(**values)
+
+
+def _required_partner_id(training: Training) -> int:
+    """Return a valid partner ID from a local training."""
+    if isinstance(training.id_partner, int) and not isinstance(
+        training.id_partner, bool
+    ):
+        return training.id_partner
+    raise ValueError("Registered trainings require an integer id_partner.")
+
+
+def _training_json(training: Training) -> str:
+    """Serialize a complete local training for the partner-ID registry."""
+    values = {
+        field.name: getattr(training, field.name)
+        for field in fields(Training)
+    }
+    return json.dumps(values, ensure_ascii=False, sort_keys=True)
+
+
+def _training_from_registry_row(
+    row: tuple[int, int | None, int | None, int, str | None],
+) -> Training:
+    """Deserialize a registry row, including rows from the pre-payload schema."""
+    id_partner, nolio_id, athlete_id, planned, training_json = row
+    if training_json is None:
+        return Training(
+            id_partner=id_partner,
+            nolio_id=nolio_id,
+            athlete_id=athlete_id,
+            planned=bool(planned),
+        )
+    values = json.loads(training_json)
+    if not isinstance(values, dict):
+        raise TypeError(f"Invalid training data for partner ID {id_partner}.")
+    values.update(
+        {
+            "id_partner": id_partner,
+            "nolio_id": nolio_id,
+            "athlete_id": athlete_id,
+            "planned": bool(planned),
+        }
+    )
+    return Training(**values)

@@ -1,9 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+from uuid import uuid4
 
 import pytest
 
 from nolito.client import NolioApiClient
-from nolito.training import TrainingSet
+from nolito.training import Training, TrainingSet
 
 pytestmark = pytest.mark.integration
 
@@ -48,3 +49,37 @@ def test_get_daily_trainings_defaults_today(client: NolioApiClient) -> None:
     explicit = client.get_daily_trainings(_today())
     default = client.get_daily_trainings()
     assert explicit == default
+
+
+def test_planned_training_lifecycle_uses_automatic_partner_id(
+    client: NolioApiClient,
+) -> None:
+    training = Training(
+        sport_id=2,
+        name=f"Nolito integration {uuid4()}",
+        date_start=(_today() + timedelta(days=1)).isoformat(),
+    )
+    created: Training | None = None
+    deleted = False
+
+    try:
+        created = client.create_training(training)
+
+        assert isinstance(created.id_partner, int)
+        assert created.id_partner > 0
+
+        updated_name = f"{created.name} updated"
+        created.name = updated_name
+        updated = client.update_training(created)
+        assert updated.name == updated_name
+
+        client.delete_training(created)
+        deleted = True
+
+        remaining = client.get_planned_trainings(
+            start=training.date_start, end=training.date_start
+        )
+        assert all(item.name != updated_name for item in remaining)
+    finally:
+        if created is not None and not deleted:
+            client.delete_training(created)

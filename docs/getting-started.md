@@ -81,6 +81,49 @@ For a range of dates:
 client.get_planned_trainings(start="2026-07-28", end="2026-10-31")
 ```
 
+### Create a training
+
+`id_partner` identifies a training created by your application for later
+updates or deletion. You can omit it when creating a `Training`: Nolito
+allocates a monotonic local ID and sends it to Nolio.
+
+```python
+from nolito.training import Training
+
+created = client.create_training(
+    Training(
+        sport_id=2,
+        name="Intervals",
+        date_start="2026-08-07",
+    )
+)
+```
+
+After Nolio creates the training, Nolito stores its `id_partner` in
+`~/.config/nolito/partner-ids.sqlite3` (or beside the configured token metadata
+file). Keep this database to update or delete trainings created by the same
+OAuth application. Nolio may include `nolio_id` in a response; Nolito records
+it when present, but `id_partner` is the identifier used for updates and
+deletes. Explicit `id_partner` values are also supported and are stored in the
+same registry.
+
+### Manage registered trainings
+
+The local registry can also store a complete training snapshot that was created
+or imported elsewhere. Registered trainings are local data; these methods do
+not fetch current data from Nolio.
+
+```python
+training = Training(id_partner=42, sport_id=2, name="Intervals")
+client.register_training(training)
+
+stored = client.get_registered_training(42)
+all_stored = client.list_registered_trainings()
+```
+
+`register_training()` rejects duplicate partner IDs. `get_registered_training()`
+raises `KeyError` when the ID is not in the local registry.
+
 ### Get data from any API endpoint
 
 The `NolioApiClient` offers a `get()` method to access any API endpoint and return its data as a dictionary or a list.
