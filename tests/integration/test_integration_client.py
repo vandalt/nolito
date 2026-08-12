@@ -3,6 +3,7 @@ from uuid import uuid4
 
 import pytest
 
+from nolito.athlete import Athlete
 from nolito.client import NolioApiClient
 from nolito.training import Training, TrainingSet
 
@@ -17,8 +18,13 @@ def test_get_requests_user(client: NolioApiClient) -> None:
     assert isinstance(client.get("user/"), dict)
 
 
-def test_get_athlete_returns_mapping(client: NolioApiClient) -> None:
-    assert isinstance(client.get_athlete(), dict)
+def test_get_athlete_returns_athlete_with_metrics(client: NolioApiClient) -> None:
+    athlete = client.get_athlete()
+
+    assert isinstance(athlete, Athlete)
+    assert athlete.id > 0
+    assert athlete.first_name
+    assert isinstance(athlete.metrics, dict)
 
 
 def test_get_metrics_returns_mapping(client: NolioApiClient) -> None:

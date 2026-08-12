@@ -1,6 +1,6 @@
 import sqlite3
 from datetime import date
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import pytest
 
@@ -11,24 +11,41 @@ from nolito.training import Training
 
 
 @pytest.fixture
-def client(settings):
-    return NolioApiClient(
-        settings=settings,
-        oauth=Mock(),
-        session=Mock(),
-    )
+def client(settings, athlete):
+    with patch.object(NolioApiClient, "get_athlete", return_value=athlete):
+        return NolioApiClient(
+            settings=settings,
+            oauth=Mock(),
+            session=Mock(),
+        )
 
 
-def test_get_athlete_requests_user(client):
-    payload = {"id": 123, "email": "athlete@example.test"}
+def test_get_athlete_requests_user_and_metadata(client):
+    user_payload = {
+        "id": 123,
+        "first_name": "Ada",
+        "last_name": "Lovelace",
+        "email": "athlete@example.test",
+    }
+    metadata_payload = {
+        "weight": {
+            "data": [
+                {"date": "2026-08-01", "value": 60},
+                {"date": "2026-08-02", "value": 59},
+            ]
+        }
+    }
 
     with patch.object(
-        NolioApiClient, "get", autospec=True, return_value=payload
-    ) as mock_get:
+        client, "get", side_effect=[user_payload, metadata_payload]
+    ) as get:
         result = client.get_athlete()
 
-    assert result is payload
-    mock_get.assert_called_once_with(client, "user/")
+    assert result.id == 123
+    assert result.metrics == {
+        "weight": {"data": {"date": "2026-08-02", "value": 59}}
+    }
+    assert get.call_args_list == [call("user/"), call("user/meta")]
 
 
 def test_constructor_creates_default_dependencies(settings):
@@ -43,6 +60,7 @@ def test_constructor_creates_default_dependencies(settings):
         ) as store,
         patch("nolito.client.OAuthManager") as oauth_manager,
         patch("nolito.client.requests.Session", return_value=session),
+        patch.object(NolioApiClient, "get_athlete", return_value=Mock()),
     ):
         client = NolioApiClient()
 
@@ -313,13 +331,14 @@ def test_create_training_rejects_registered_partner_id(client):
     post.assert_not_called()
 
 
-def test_create_training_ids_are_monotonic_across_clients(settings):
+def test_create_training_ids_are_monotonic_across_clients(settings, athlete):
     trainings = [
         Training(sport_id=2, name="One", date_start="2026-08-07"),
         Training(sport_id=2, name="Two", date_start="2026-08-08"),
     ]
-    first = NolioApiClient(settings=settings, oauth=Mock(), session=Mock())
-    second = NolioApiClient(settings=settings, oauth=Mock(), session=Mock())
+    with patch.object(NolioApiClient, "get_athlete", return_value=athlete):
+        first = NolioApiClient(settings=settings, oauth=Mock(), session=Mock())
+        second = NolioApiClient(settings=settings, oauth=Mock(), session=Mock())
 
     with patch.object(first, "post", return_value={"nolio_id": 123}):
         first.create_training(trainings[0])

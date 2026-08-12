@@ -1,0 +1,170 @@
+{
+  "nolio_id": 34749186,
+  "name": "Cadence progression",
+  "date_start": "2026-07-30",
+  "date_end": "",
+  "hour_start": "",
+  "description": "                  ",
+  "sport": "Vélo - Route",
+  "sport_id": 14,
+  "duration": 3600,
+  "distance": 0,
+  "rpe": 0,
+  "elevation_gain": 0,
+  "elevation_loss": 0,
+  "load_foster": 0,
+  "load_coggan": 37.5,
+  "is_competition": false,
+  "kilojoules": 0,
+  "avg_watt": 0,
+  "max_watt": 0,
+  "structured_workout": [
+    {
+      "step_duration_type": "duration",
+      "step_duration_value": 600,
+      "target_value_max": 153.0,
+      "target_value_min": 126.0,
+      "intensity_type": "warmup",
+      "target_type": "heartrate",
+      "secondary_step": {
+        "target_value_max": 95,
+        "target_value_min": 85,
+        "manual_values": true,
+        "target_type": "rpm",
+        "name": "cadence"
+      },
+      "name": "Zone 1",
+      "type": "step"
+    },
+    {
+      "step_duration_type": "duration",
+      "open_duration": true,
+      "step_duration_value": 600,
+      "target_value_max": 166.0,
+      "target_value_min": 153.0,
+      "intensity_type": "warmup",
+      "target_type": "heartrate",
+      "secondary_step": {
+        "target_value_max": 95,
+        "target_value_min": 85,
+        "manual_values": true,
+        "target_type": "rpm",
+        "name": "cadence"
+      },
+      "name": "Zone 2",
+      "type": "step"
+    },
+    {
+      "step_duration_type": "duration",
+      "step_duration_value": 120,
+      "target_value_max": 90,
+      "intensity_type": "active",
+      "manual_values": true,
+      "target_type": "rpm",
+      "secondary_step": {
+        "target_value_max": 166.0,
+        "target_value_min": 153.0,
+        "target_type": "heartrate",
+        "name": "Zone 2"
+      },
+      "name": "cadence",
+      "type": "step"
+    },
+    {
+      "step_duration_type": "duration",
+      "step_duration_value": 120,
+      "target_value_max": 95,
+      "intensity_type": "active",
+      "manual_values": true,
+      "target_type": "rpm",
+      "secondary_step": {
+        "target_value_max": 166.0,
+        "target_value_min": 153.0,
+        "target_type": "heartrate",
+        "name": "Zone 2"
+      },
+      "name": "cadence",
+      "type": "step"
+    },
+    {
+      "step_duration_type": "duration",
+      "step_duration_value": 120,
+      "target_value_max": 100,
+      "intensity_type": "active",
+      "manual_values": true,
+      "target_type": "rpm",
+      "secondary_step": {
+        "target_value_max": 166.0,
+        "target_value_min": 153.0,
+        "target_type": "heartrate",
+        "name": "Zone 2"
+      },
+      "name": "cadence",
+      "type": "step"
+    },
+    {
+      "step_duration_type": "duration",
+      "step_duration_value": 120,
+      "target_value_max": 105,
+      "intensity_type": "active",
+      "manual_values": true,
+      "target_type": "rpm",
+      "secondary_step": {
+        "target_value_max": 166.0,
+        "target_value_min": 153.0,
+        "target_type": "heartrate",
+        "name": "Zone 2"
+      },
+      "name": "cadence",
+      "type": "step"
+    },
+    {
+      "step_duration_type": "duration",
+      "step_duration_value": 120,
+      "target_value_max": 110,
+      "intensity_type": "active",
+      "manual_values": true,
+      "target_type": "rpm",
+      "secondary_step": {
+        "target_value_max": 166.0,
+        "target_value_min": 153.0,
+        "target_type": "heartrate",
+        "name": "Zone 2"
+      },
+      "name": "cadence",
+      "type": "step"
+    },
+    {
+      "step_duration_type": "duration",
+      "step_duration_value": 1200,
+      "target_value_max": 166.0,
+      "target_value_min": 153.0,
+      "target_type": "heartrate",
+      "secondary_step": {
+        "target_value_max": 95,
+        "target_value_min": 85,
+        "manual_values": true,
+        "target_type": "rpm",
+        "name": "cadence"
+      },
+      "name": "Zone 2",
+      "type": "step"
+    },
+    {
+      "step_duration_type": "duration",
+      "step_duration_value": 600,
+      "target_value_max": 153.0,
+      "target_value_min": 126.0,
+      "target_type": "heartrate",
+      "secondary_step": {
+        "target_value_max": 85,
+        "target_value_min": 80,
+        "manual_values": true,
+        "target_type": "rpm",
+        "name": "cadence"
+      },
+      "name": "Zone 1",
+      "type": "step"
+    }
+  ]
+}

@@ -3,6 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from nolito.athlete import Athlete
 from nolito.settings import NolitoSettings
 from nolito.tokens import TokenSet
 
@@ -48,6 +49,22 @@ def tokens() -> TokenSet:
         access_token="access-token",
         refresh_token="refresh-token",
         expires_at=2_000_000_000,
+    )
+
+
+@pytest.fixture
+def athlete() -> Athlete:
+    return Athlete(
+        id=42,
+        first_name="Ada",
+        last_name="Lovelace",
+        email="ada@example.test",
+        metrics={
+            "hrmax": {"data": {"value": 200}},
+            "ftp": {"data": {"value": 200}},
+            "vo2max": {"data": {"value": 55}},
+            "aerobicspeed": {"data": {"value": 15}},
+        },
     )
 
 

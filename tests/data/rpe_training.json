@@ -1,0 +1,97 @@
+{
+  "nolio_id": 34749209,
+  "name": "2x4x(2+1)min",
+  "date_start": "2026-08-06",
+  "date_end": "",
+  "hour_start": "",
+  "description": "                   ",
+  "sport": "Vélo - Route",
+  "sport_id": 14,
+  "duration": 4800,
+  "distance": 0,
+  "rpe": 0,
+  "elevation_gain": 0,
+  "elevation_loss": 0,
+  "load_foster": 0,
+  "load_coggan": 0,
+  "is_competition": false,
+  "kilojoules": 0,
+  "avg_watt": 0,
+  "max_watt": 0,
+  "structured_workout": [
+    {
+      "step_duration_type": "duration",
+      "open_duration": true,
+      "step_duration_value": 1200,
+      "target_value_max": 153.0,
+      "target_value_min": 126.0,
+      "intensity_type": "warmup",
+      "target_type": "heartrate",
+      "name": "Zone 1",
+      "type": "step"
+    },
+    {
+      "type": "repetition",
+      "value": 2,
+      "steps": [
+        {
+          "type": "repetition",
+          "value": 4,
+          "steps": [
+            {
+              "step_duration_type": "duration",
+              "step_duration_value": 120,
+              "rpe": 8,
+              "intensity_type": "active",
+              "target_type": "rpe",
+              "secondary_step": {
+                "target_value_max": 105,
+                "target_value_min": 100,
+                "manual_values": true,
+                "target_type": "rpm",
+                "name": "cadence"
+              },
+              "name": "RPE 8/10",
+              "type": "step"
+            },
+            {
+              "step_duration_type": "duration",
+              "step_duration_value": 60,
+              "rpe": 1,
+              "intensity_type": "cooldown",
+              "target_type": "rpe",
+              "secondary_step": {
+                "target_value_max": 80,
+                "manual_values": true,
+                "target_type": "rpm",
+                "name": "cadence"
+              },
+              "name": "RPE 1/10",
+              "type": "step"
+            }
+          ]
+        },
+        {
+          "step_duration_type": "duration",
+          "step_duration_value": 480,
+          "target_value_max": 153.0,
+          "target_value_min": 126.0,
+          "intensity_type": "cooldown",
+          "target_type": "heartrate",
+          "name": "Zone 1",
+          "type": "step"
+        }
+      ]
+    },
+    {
+      "step_duration_type": "duration",
+      "step_duration_value": 1200,
+      "target_value_max": 153.0,
+      "target_value_min": 126.0,
+      "intensity_type": "cooldown",
+      "target_type": "heartrate",
+      "name": "Zone 1",
+      "type": "step"
+    }
+  ]
+}

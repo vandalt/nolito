@@ -333,10 +333,14 @@ class NolioApiClient:
         user_payload = self.get("user/")
         if not isinstance(user_payload, dict):
             raise NolioApiError("Unexpected athlete response format.")
+        return Athlete(**user_payload, metrics=self.get_metrics())
+
+    def get_metrics(self) -> dict[str, dict[str, dict[str, Any]]]:
+        """Get the latest value for each populated athlete metric."""
         meta_payload = self.get("user/meta")
         if not isinstance(meta_payload, dict):
             raise NolioApiError("Unexpected athlete metadata response format.")
-        latest_metrics = {
+        return {
             key: {
                 **metric,
                 "data": max(metric["data"], key=lambda e: e["date"]),
@@ -344,7 +348,6 @@ class NolioApiClient:
             for key, metric in meta_payload.items()
             if isinstance(metric, dict) and metric.get("data")
         }
-        return Athlete(**user_payload, metrics=latest_metrics)
 
     def get_planned_trainings(
         self,
