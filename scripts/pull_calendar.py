@@ -20,6 +20,7 @@ parser.add_argument(
 parser.add_argument(
     "-o", "--output", help="Output file where the trainings should be saved."
 )
+parser.add_argument("--overwrite", action="store_true", help="Overwrite the output file if it exists.")
 parser.add_argument(
     "-v",
     "--verbose",
@@ -37,7 +38,7 @@ client = NolioApiClient()
 trainings = client.get_planned_trainings(start=start, end=end, limit=args.limit)
 print(f"Found {len(trainings)} trainings")
 if args.output is not None:
-    trainings.to_json(args.output)
+    trainings.to_json(args.output, overwrite=args.overwrite)
     print(f"Saved trainings to {args.output}")
 if args.verbose:
     print(trainings)

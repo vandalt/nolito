@@ -138,14 +138,18 @@ class Training:
                 edit_dict[key] = int(edit_dict[key])
         return edit_dict
 
-    def to_json(self, path: Path | str):
+    def to_json(self, path: Path | str, overwrite: bool = False):
         """Save the training to a json file
 
         Uses :meth:`Training.to_dict()`
 
         :param path: Path to the JSON file
+        :param overwrite: Overwrite the file if it exists
+        :raises FileExistsError: If the file exists and ``ovewrite`` is ``False``
         """
         path = Path(path)
+        if path.exists() and not overwrite:
+            raise FileExistsError(f"The output file {path} exists and overwrite is False")
         path.write_text(
             json.dumps(self.to_dict(), ensure_ascii=False, indent=2),
             encoding="utf-8",
@@ -227,12 +231,16 @@ class TrainingSet(Sequence[Training]):
             training_dicts.append(training.to_dict())
         return training_dicts
 
-    def to_json(self, path: Path | str):
+    def to_json(self, path: Path | str, overwrite: bool = False):
         """Save the trainings to JSON a list of dictionaries
 
         :param path: Path to the JSON file
+        :param overwrite: Overwrite the file if it exists
+        :raises FileExistsError: If the file exists and ``ovewrite`` is ``False``
         """
         path = Path(path)
+        if path.exists() and not overwrite:
+            raise FileExistsError(f"The output file {path} exists and overwrite is False")
         path.write_text(
             json.dumps(self.to_dicts(), ensure_ascii=False, indent=2),
             encoding="utf-8",
