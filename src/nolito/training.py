@@ -198,8 +198,8 @@ class TrainingSet(Sequence[Training]):
         self.trainings = new_trainings
 
     def __repr__(self):
-        trainings_str = "\n".join([repr(training) for training in self.trainings])
-        return f"Training set with {len(self)} trainings:\n{trainings_str}"
+        trainings_str = "\n".join([f"{i}: {training}" for i, training in enumerate(self.trainings)])
+        return f"Trainings:\n{trainings_str}\n(Training set with {len(self)} trainings)\n"
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, TrainingSet) and self.trainings == other.trainings
