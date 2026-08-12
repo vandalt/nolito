@@ -10,6 +10,7 @@ from urllib.parse import urljoin
 
 import requests
 
+from nolito.athlete import Athlete
 from nolito.training import Training, TrainingSet
 
 from .errors import NolioApiError
@@ -204,11 +205,10 @@ class NolioApiClient:
         self._partner_ids = _PartnerIdRegistry(
             self._settings.metadata_file.parent / "partner-ids.sqlite3"
         )
-        user = self.get_athlete()
-        self._user = f"{user['first_name']} {user['last_name']}"
+        self._user = self.get_athlete()
 
     def __repr__(self):
-        return f"NolioApiClient authenticated for {self._user}"
+        return f"NolioApiClient authenticated for {self._user.full_name}"
 
     def get(self, endpoint: str, params: dict[str, Any] | None = None) -> list | dict:
         """Send a ``GET`` request to any Nolio API endpoint
@@ -322,35 +322,29 @@ class NolioApiClient:
         if response is not None:
             raise NolioApiError("Unexpected deleted-training response format.")
 
-    def get_athlete(self) -> dict[str, Any]:
+    def get_athlete(self) -> Athlete:
         """Get the user information for the logged-in athlete
+
+        This queries both "user/" and "user/meta" to get the main athlete info
+        along health and performance metrics.
 
         :return: The json dictionary with user information.
         """
-        payload = self.get("user/")
-        if isinstance(payload, dict):
-            return payload
-        raise NolioApiError("Unexpected athlete response format.")
-
-    def get_metrics(self) -> dict:
-        """Get health metrics for the logged-in user
-
-        These include FTP, VO2 Max, sleep, etc.
-        It retains only the latest for each.
-
-        :return: The dictionary with metrics
-        """
-        payload = self.get("user/meta")
-        if not isinstance(payload, dict):
+        user_payload = self.get("user/")
+        if not isinstance(user_payload, dict):
+            raise NolioApiError("Unexpected athlete response format.")
+        meta_payload = self.get("user/meta")
+        if not isinstance(meta_payload, dict):
             raise NolioApiError("Unexpected athlete metadata response format.")
-        return {
+        latest_metrics = {
             key: {
                 **metric,
                 "data": max(metric["data"], key=lambda e: e["date"]),
             }
-            for key, metric in payload.items()
+            for key, metric in meta_payload.items()
             if isinstance(metric, dict) and metric.get("data")
         }
+        return Athlete(**user_payload, metrics=latest_metrics)
 
     def get_planned_trainings(
         self,
@@ -485,9 +479,7 @@ def _require_mapping(
 def _training_from_response(training: Training, response: dict[str, Any]) -> Training:
     """Merge Nolio's known response fields onto a submitted training."""
     values = {field.name: getattr(training, field.name) for field in fields(Training)}
-    values.update(
-        {key: value for key, value in response.items() if key in values}
-    )
+    values.update({key: value for key, value in response.items() if key in values})
     values["id_partner"] = training.id_partner
     values["planned"] = training.planned
     return Training(**values)
@@ -504,10 +496,7 @@ def _required_partner_id(training: Training) -> int:
 
 def _training_json(training: Training) -> str:
     """Serialize a complete local training for the partner-ID registry."""
-    values = {
-        field.name: getattr(training, field.name)
-        for field in fields(Training)
-    }
+    values = {field.name: getattr(training, field.name) for field in fields(Training)}
     return json.dumps(values, ensure_ascii=False, sort_keys=True)
 
 
