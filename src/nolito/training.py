@@ -6,6 +6,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Self, overload
 
+from nolito.athlete import Athlete
+
 WorkoutStep = dict[str, Any]
 StructuredWorkout = list[WorkoutStep]
 
@@ -97,8 +99,10 @@ class Training:
         """Alias to ``self.copy()``"""
         return self.copy()
 
-    def to_power(self, athlete) -> Self:
+    def to_power(self, athlete: Athlete) -> Self:
         power_training = self.copy()
+        if power_training.structured_workout is None:
+            return power_training
         power_zones = athlete.get_power_zones()
 
         def convert_steps(steps: StructuredWorkout) -> StructuredWorkout:
@@ -259,6 +263,12 @@ class TrainingSet(Sequence[Training]):
 
     def __iter__(self) -> Iterator[Training]:
         return iter(self.trainings)
+
+    def to_power(self, athlete: Athlete) -> Self:
+        power_trainings = []
+        for training in self.trainings:
+            power_trainings.append(training.to_power(athlete))
+        return TrainingSet(power_trainings)
 
     def to_dicts(self) -> list[dict[str, Any]]:
         """Convert the objects to a list of dictionaries
